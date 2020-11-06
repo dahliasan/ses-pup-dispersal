@@ -27,6 +27,8 @@ projection(dmp1) <-  "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"
 ssmp <- dmp1 %>%
   st_as_sf(dmp1)
 
+# plot all tracks in one plot ---------------------------------------------
+
 ## project data to Antarctic Stereographic
 crs <- "+proj=stere +lon_0=170 +lat_0=-90 +units=km +datum=WGS84"
 ssmp_sf <- ssmp %>% st_transform(crs = crs)
@@ -36,7 +38,7 @@ ssmp_sf <- ssmp %>% st_transform(crs = crs)
 world_sf <- st_as_sf(rworldmap::getMap(resolution = "high")) %>%
   st_transform(., crs = crs)
 
-bb <- extent(ssmp_sf)
+bb <- extent(ssmp_sf) # this bb will be used as the standard for individual plots later
 ssm_plot <- ggplot() +
   geom_sf(data = ssmp_sf, size=.1) +
   geom_sf(data = world_sf, fill = grey(0.4), colour = NA) +
@@ -44,7 +46,8 @@ ssm_plot <- ggplot() +
 
 ssm_plot
 
-## plot each seal individually
+
+# plot each seal individually ---------------------------------------------
 by_id <- ssmp_sf %>% split(ssmp$id)
 
 ssm_plots <- purrr::map(by_id, function(df){
@@ -65,6 +68,9 @@ ssm_plots <- purrr::map(by_id, function(df){
   
 })
 ssm_plots[[3]]
+
+
+# save individual plots -------------------------------------------
 
 ids <- names(ssm_plots)
 
