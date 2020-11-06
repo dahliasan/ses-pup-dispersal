@@ -1,6 +1,7 @@
 library(Hmisc)
 library(tidyverse)
 library(lubridate)
+library(trip)
 
 
 ## Install foieGras
@@ -14,12 +15,11 @@ library(foieGras)
 mdb <-  mdb.get('./Data/AccessDB/mq1.mdb')
 mdb2 <-  mdb.get('./Data/AccessDB/mq2.mdb')
 
-df <- mdb$diag %>% as_tibble() %>% select(-PTT, -ACTUAL.PTT)
-df2 <- mdb2$diag %>% as_tibble() %>% select(-PTT, -ACTUAL.PTT)
+df <- mdb$diag %>% as_tibble() %>% select(-PTT) %>% mutate(ACTUAL.PTT = ACTUAL.PTT %>% as.character)
+df2 <- mdb2$diag %>% as_tibble() %>% select(-PTT) %>% mutate(ACTUAL.PTT = ACTUAL.PTT %>% as.character)
 df <- bind_rows(df, df2)
 
-write.csv(df, './Data/mq_ellie_weaners_argos.csv')
-
+# write_csv(df, './Data/mq-ellie-weaners-argos.csv')
 
 # Tidy up data ------------------------------------------------------------
 
@@ -33,14 +33,42 @@ df <- df %>% mutate_if(is.numeric, as.numeric)
 
 ## Select only relevant columns and rename them
 weaners <- df %>% 
-  select(ref, D.DATE, LQ, LON, LAT)
+  select(ACTUAL.PTT, D.DATE, LQ, LON, LAT)
 
 colnames(weaners) <- c('id', 'date', 'lc', 'lon', 'lat')
 
 weaners$id <- weaners$id %>% as.character()
+weaners$lc <- weaners$lc %>% factor()
 
 
 # Fit SSM -----------------------------------------------------------------
-weaners <- weaners %>% filter(!id == 'mq1-22488-95') # this seal had < 3 locations
+library(argosfilter)
+w <- weaners %>% 
+  group_by(id) %>% 
+  nest()
 
-fit <- fit_ssm(weaners, model= 'crw', vmax = 2, time.step = NA, verbose = 0, map = list(psi = factor(NA)))
+w$data <- w %>% 
+  .$data %>% 
+  map(function(x) {
+    x$filter <- with(x, vmask(lat, lon, date, 4))
+    x %>% filter(filter == 'not')
+  })
+
+w <- w %>% 
+  unnest(cols = c(data)) %>% 
+  select(-filter) %>% 
+  ungroup()
+
+w <- w %>% filter(!id == '17213')
+
+fit <- fit_ssm(weaners %>% filter(id == '2849'), model= 'crw',  vmax = 5, time.step = 48, verbose = 0, 
+               map = list(rho_o = factor(NA)))
+
+
+# Plot raw locations ------------------------------------------------------
+
+
+w %>% 
+  ggplot(aes(lon, lat, colour = id)) + 
+  geom_point() + 
+  geom_path()
