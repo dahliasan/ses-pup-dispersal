@@ -9,11 +9,11 @@ library(raster)
 # Step 1: Prepare data ------------------------------------------------------------
 w1 <- read_csv("./Data/mq-ellie-weaners-argos.csv")
 w1 <- w1 %>% 
-  mutate(date = D.DATE %>% as.character() %>% mdy_hms())
+  mutate(date = d.date %>% mdy_hms())
 
 w2 <-  w1 %>%
-  dplyr::select(ref, date, LQ, LON, LAT) %>%
-  dplyr::rename(id=ref, lc=LQ, lon=LON, lat=LAT)
+  dplyr::select(ref, date, lq, lon, lat) %>%
+  dplyr::rename(id=ref, lc=lq)
 
 ## convert to foisGras format
 w2 <- w2 %>% mutate(lc = replace(lc, lc == -9, "Z"), lc = replace(lc, lc == -2, "B"), lc = replace(lc, lc == -1, "A"))
@@ -59,7 +59,7 @@ raw_plot <- ggplot() +
   geom_sf(data = d_sf, size=.1) +
   geom_sf(data = world_sf, fill = grey(0.4), colour = NA) +
   # xlim(bb[1], bb[2]) + ylim(bb[3], bb[4]) + # show extent of all raw locations
-  xlim(bb[1]+3500, bb[2]-7000) + ylim(bb[3]+5000, bb[4]-500) # crop out outlier locations
+  xlim(bb[1]+4500, bb[2]-5000) + ylim(bb[3]+4000, bb[4]-500) # crop out outlier locations
 
 raw_plot
 
