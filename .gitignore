@@ -3,3 +3,17 @@
 .RData
 .Ruserdata
 .DS_Store
+*.mdb
+*.jpg
+*.png
+Data/CMC/TAGS/TAGS_ELLIE_HISTORY_MATRIX.csv
+Data/CMC/TAGS/TAGS_ELLIE_LOCATIONS.csv
+Data/CMC/TAGS/TAGS_ELLIE_SEALS.csv
+Data/CMC/TAGS/TAGS_ELLIE_SIGHTINGS.csv
+Data/CMC/TAGS/TAGS_ELLIE_STATUS.csv
+Data/CMC/TAGS/TAGS_ELLIE_TAGS.csv
+Data/CMC/TAGS/all_data.xlsx
+Data/CMC/TAGS/readme.txt
+*.zip
+Output/ssm plots/keep/weaner tracks - mq3 mq4.zip
+Data/mq-ellie-weaners-dive.csv
