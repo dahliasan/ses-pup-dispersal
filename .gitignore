@@ -1,23 +1,24 @@
 .Rproj.user
 .Rhistory
 .RData
-*.RData
 .Ruserdata
 .DS_Store
-*.mdb
-*.jpg
-*.png
 
 
-*.zip
 
+# Folders
 _archive
 Output
-Data
-Output/ssm plots/keep/weaner tracks - mq3 mq4.zip
-Data/mq-ellie-weaners-dive.csv
-Writing
-Grants
-Meetings
-Papers
-Reisinger pseudo track code
+Data/AccessDB
+Data/Environmental
+
+# all images 
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+
+# Output R Data files
+*.Rdata
+*.rds
