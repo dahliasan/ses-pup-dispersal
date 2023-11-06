@@ -12,6 +12,7 @@ Output
 Data/AccessDB
 Data/Environmental
 
+
 # all images 
 *.png
 *.jpg
@@ -22,3 +23,7 @@ Data/Environmental
 # Output R Data files
 *.Rdata
 *.rds
+*.mdb
+Data/mq-ellie-weaners-dive.RData
+Data/mq-ellie-weaners-dive.csv
+Data/mq-ellie-weaners-haulout.RData
