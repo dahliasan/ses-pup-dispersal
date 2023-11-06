@@ -366,35 +366,49 @@ p1 <- ggplot() +
 
 # weaner
 p2 <- ggplot() +
+  # add weaner 
   geom_histogram(data = data.frame(circ.w), aes(x = circ.w), 
                  breaks = seq(0, 360, 45), 
-                 colour = "black", 
-                 fill = "grey") + 
+                 colour = NA, 
+                 fill = "firebrick3", 
+                 alpha = 1) + 
+  # add particle trace 
+  geom_histogram(data = data.frame(circ.p), aes(x = circ.p), 
+                 breaks = seq(0, 360, 45), 
+                 fill = NA,
+                 color = "black",
+                 alpha = 1,
+                 size = 1) + 
+ 
   coord_polar() +
   scale_x_continuous("", limits = c(0, 360), breaks = seq(0, 360, 45)) +
-  geom_vline(xintercept = mean(circ.w), color = "black", linetype = 2, size = 1) +
+  # weaner mean direction
+  geom_vline(xintercept = mean(circ.w), color = "black", linetype = 1, size = 1) +
   annotate("label", x = mean(circ.w), y = 20, label = mean(circ.w) %>% round(1)) + 
+  # particle mean direction
+  geom_vline(xintercept = mean(circ.p), color = "pink", linetype = 2, size = 1) +
+    annotate("label", x = mean(circ.p), y = 20, label = mean(circ.p) %>% round(1)) +
   labs(subtitle = paste('weaners (n=', length(circ.w), ')',sep = ''), 
        y = "count")  + 
   theme_bw()
 
-# particle trace
-p3 <- ggplot() +
-  geom_histogram(data = data.frame(circ.p), aes(x = circ.p), 
-                 breaks = seq(0, 360, 45), 
-                 colour = "black", 
-                 fill = "grey") + 
-  coord_polar() +
-  scale_x_continuous("", limits = c(0, 360), breaks = seq(0, 360, 45)) +
-  geom_vline(xintercept = mean(circ.p), color = "black", linetype = 2, size = 1) +
-  annotate("label", x = mean(circ.p), y = 20, label = mean(circ.p) %>% round(1)) + 
-  labs(subtitle = paste('particle trace (n=', length(circ.p), ')',sep = ''),
-       y = "") + 
-  theme_bw()
+# # particle trace
+# p3 <- ggplot() +
+#   geom_histogram(data = data.frame(circ.p), aes(x = circ.p), 
+#                  breaks = seq(0, 360, 45), 
+#                  colour = "black", 
+#                  fill = "grey") + 
+#   coord_polar() +
+#   scale_x_continuous("", limits = c(0, 360), breaks = seq(0, 360, 45)) +
+#   geom_vline(xintercept = mean(circ.p), color = "black", linetype = 2, size = 1) +
+#   annotate("label", x = mean(circ.p), y = 20, label = mean(circ.p) %>% round(1)) + 
+#   labs(subtitle = paste('particle trace (n=', length(circ.p), ')',sep = ''),
+#        y = "") + 
+#   theme_bw()
 
 # ~ save plots ------------------------------------------------------------
-png('dispersal_direction.png', width=20, height=10, units='cm', res=500)
-ggarrange(p2, p3, p1, ncol = 3, labels = c('a', 'b', 'c'))
+png('/output/dispersal_direction_v2.png', width=20, height=15, units='cm', res=500)
+ggarrange(p2, p1, ncol = 2, labels = c('a', 'b'))
 dev.off()
 
 # png('dispersal_direction_weaner_juvenile_adult.png', width=50, height=12, units='cm', res=500)

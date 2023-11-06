@@ -2,7 +2,7 @@
 
 
 
-d1 <- readRDS("./Output/all_env_survival.rds")
+d1 <- readRDS("./Output/all_data_combined.rds")
 dr <- d1 %>% filter(sim == 0) # only real locations
 
 dr %>% 
