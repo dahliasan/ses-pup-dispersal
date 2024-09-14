@@ -50,6 +50,16 @@ tmp %>% ggplot() +
   labs(caption = "seals that were not seen at the 6 month resight, but their tracks were complete.")
 
 
+tmp <- dr %>% 
+  group_by(id, sex) %>% 
+  summarise(bearing = first(bearing.w))
+
+females <- tmp %>%
+  filter(sex == 'f')
+
+males <- tmp %>
+  filter(sex == 'm')
+
 
 # Model -------------------------------------------------------------------
 # + 1st trip survival -----------------------------------------------------
