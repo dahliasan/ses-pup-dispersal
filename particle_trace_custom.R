@@ -10,8 +10,7 @@
 
 # curr_u <- uo1
 # curr_v <- vo1
-library(logger)
-# install.packages("logger")
+
 
 particle_trace_custom <- function(
     xy, time_step = 24 * 3600, start_date = NULL, end_date = NULL,
@@ -58,17 +57,15 @@ particle_trace_custom <- function(
 
     # files <- raadfiles::altimetry_currents_polar_files()
 
-    jj <- 1
+    # Get the right date from uo and vo
+    curr_dates <- raster::getZ(curr_u)
+    curr_dates <- lubridate::ymd(curr_dates)
+    # convert to POSIXct
+    curr_dates <- as.POSIXct(curr_dates, tz = "UTC")
 
     for (jj in seq_along(dates)) {
         model_time <- dates[jj] # eg. "1995-12-15 UTC"
         # model_time %>% class() # POSIXct
-
-        # Get the right date from uo and vo
-        curr_dates <- raster::getZ(curr_u)
-        curr_dates <- lubridate::ymd(curr_dates)
-        # convert to POSIXct
-        curr_dates <- as.POSIXct(curr_dates, tz = "UTC")
 
         # Which date is closest to the model_time
         curr_date <- curr_dates[which.min(abs(curr_dates - model_time))]
