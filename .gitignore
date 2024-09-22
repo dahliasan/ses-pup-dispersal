@@ -27,3 +27,11 @@ Data/Environmental
 Data/mq-ellie-weaners-dive.RData
 Data/mq-ellie-weaners-dive.csv
 Data/mq-ellie-weaners-haulout.RData
+
+*.nc
+
+
+*.tif*
+.vscode/launch.json
+.vscode/settings.json
+/paths
