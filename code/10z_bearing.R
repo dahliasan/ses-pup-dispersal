@@ -24,10 +24,10 @@
   locw <- readRDS("./Output/tracks_processed_12h.rds")
   masterData <- readRDS("./Output/all_data_combined.rds")
   load("baseInfo.rdata")
-  source("convert2polarsf.R")
-  source("functions.R")
+  source("code/convert2polarsf.R")
+  source("code/functions.R")
   load("./Data/macca_winter_locs.Rdata") # adult females
-  load("10z_generate_summaries_functions.R")
+  source("code/10z_generate_summaries_functions.R")
   locf <- loc %>%
     as_tibble() %>%
     arrange(seal, gmt)
