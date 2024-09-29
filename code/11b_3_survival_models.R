@@ -1,3 +1,8 @@
+output_path <- paste0("output/dispersal_analysis_2/", Sys.Date())
+dir.create(output_path, showWarnings = FALSE, recursive = TRUE)
+
+sink(paste0(output_path, "/model_output.txt"))
+
 library(tidyverse)
 library(lubridate)
 library(sf)
@@ -100,3 +105,5 @@ summary(avg_model_year)
 
 importance_year <- sw(dredge_year)
 print(importance_year)
+
+sink()
