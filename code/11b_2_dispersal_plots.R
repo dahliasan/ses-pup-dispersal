@@ -115,5 +115,5 @@
         lims(x = bbox[c("xmin", "xmax")] + c(-0.5, 0.5), y = bbox[c("ymin", "ymax")] + c(-0.5, 0.5)) +
         labs(x = "Longitude", y = "Latitude")
 
-    ggsave(paste0("output/dispersal_analysis_2/", Sys.Date(), "/dispersal_plot.png"), plot = p, width = 12, height = 10, dpi = 300, bg = "white")
+    ggsave(file.path(output_path, "dispersal_plot.png"), plot = p, width = 12, height = 10, dpi = 300, bg = "white")
 }

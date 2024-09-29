@@ -1,7 +1,16 @@
-output_path <- paste0("output/dispersal_analysis_2/", Sys.Date())
+# Check if output_path exists
+if (!exists("output_path")) {
+    cat("Output directory does not exist.\n")
+    user_input <- readline(prompt = "Enter a valid output path: ")
+    output_path <- paste0(user_input, Sys.Date())
+}
+
+# Create the directory if it doesn't exist
 dir.create(output_path, showWarnings = FALSE, recursive = TRUE)
 
 sink(paste0(output_path, "/model_output.txt"))
+
+print("Starting survival model analysis...")
 
 library(tidyverse)
 library(lubridate)
@@ -61,13 +70,14 @@ model_summary <- model_summary %>%
     mutate(delta_AICc = AICc - min(AICc)) %>% # Use AICc instead of AIC
     arrange(delta_AICc)
 
-# Print the summary
+print("Model summary for trip survival:")
 print(model_summary)
 
 avg_model <- model.avg(best_models)
 summary(avg_model)
 
 importance <- sw(dredge_trip)
+print("Variable importance for trip survival:")
 print(importance)
 
 # Interpretation of variable importance:
@@ -98,12 +108,16 @@ model_summary_year <- model_summary_year %>%
     mutate(delta_AICc = AICc - min(AICc)) %>%
     arrange(delta_AICc)
 
+print("Model summary for year survival:")
 print(model_summary_year)
 
 avg_model_year <- model.avg(best_models_year)
 summary(avg_model_year)
 
 importance_year <- sw(dredge_year)
+print("Variable importance for year survival:")
 print(importance_year)
+
+print("Analysis complete. Output saved.")
 
 sink()

@@ -1,4 +1,11 @@
-{ # Load required libraries
+# #    Execute the main function
+# current_date <- format(Sys.Date(), "%Y-%m-%d")
+# output_path <- file.path("./Output/dispersal_analysis_2", current_date)
+# seal_data_path <- "./Output/tracks_processed_12h.rds"
+# particle_data_path <- "./Output/currently_particleTrace.rds"
+
+{
+    # Load required libraries
     library(tidyverse)
     library(patchwork)
     library(circular)
@@ -332,8 +339,8 @@
         # Combine all results
         all_results <- list(
             data = list(
-                locw_matched = locw_matched,
-                locpt_matched = locpt_matched
+                locw_matched = data_list$locw_matched,
+                locpt_matched = data_list$locpt_matched
             ),
             analysis_results = results,
             plots = plots,
@@ -360,16 +367,9 @@
         return(all_results)
     }
 
-    # Execute the main function
-    current_date <- format(Sys.Date(), "%Y-%m-%d")
-    output_path <- file.path("./Output/dispersal_analysis_2", current_date)
-    seal_data_path <- "./Output/tracks_processed_12h.rds"
-    particle_data_path <- "./Output/currently_particleTrace.rds"
-
-
     all_results <- main(
-        seal_data_path = "./Output/tracks_processed_12h.rds",
-        particle_data_path = "./Output/currently_particleTrace.rds",
+        seal_data_path = seal_data_path,
+        particle_data_path = particle_data_path,
         output_path = output_path
     )
 }
