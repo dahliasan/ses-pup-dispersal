@@ -71,3 +71,30 @@ whichZone <- function(theta) {
     return("NW-N")
   }
 }
+
+
+# survival
+# create function to determine survival
+get_survival <- function() {
+  require(tidyverse)
+  all_data_weaners <- readRDS("./Output/all_data_combined.rds")
+  all_data_weaners %>%
+    filter(sim == 0, trip == 1) %>%
+    group_by(id) %>%
+    summarise(
+      seen_6m = if (any(seen_6m == TRUE)) TRUE else FALSE,
+      seen_1y = if (any(seen_1y == TRUE)) TRUE else FALSE,
+      is_trip_complete = if (all(is_trip_complete == TRUE)) TRUE else FALSE,
+      weanmass = first(weanmass),
+      birthyear = first(birthyear),
+      survive_trip_1 = ifelse(is_trip_complete == TRUE | seen_6m == TRUE, TRUE, FALSE),
+      survive_year_1 = ifelse(seen_1y == TRUE, TRUE, FALSE),
+    ) %>%
+    mutate(
+      size = case_when(
+        weanmass > 135 ~ "heavy",
+        weanmass < 96 ~ "light",
+        TRUE ~ "avg"
+      )
+    )
+}
