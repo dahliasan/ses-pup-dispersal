@@ -3,7 +3,6 @@ library(lubridate)
 library(sf)
 
 preprocess_seal_particle_data <- function(seal_data_path = "./Output/tracks_processed_12h.rds", particle_data_path = "./Output/currently_particleTrace.rds") {
-    
     # Load data
     cat("Loading seal data\n")
     locw <- readRDS(seal_data_path)
@@ -29,10 +28,18 @@ preprocess_seal_particle_data <- function(seal_data_path = "./Output/tracks_proc
         filter(is.na(weanmass)) %>%
         dplyr::pull(id)
 
+    seals_with_less_than_5_days <- locw %>%
+        group_by(id) %>%
+        mutate(days_since_start = as.numeric(difftime(date, min(date), units = "day"))) %>%
+        summarise(max_days = max(days_since_start)) %>%
+        filter(max_days < 5) %>%
+        pull(id)
+
     # Prepare locw data
     locw <- locw %>%
         filter(!id %in% seals_with_no_weanmass) %>%
-        filter(trip == 1, SUS == FALSE) # only keep first trip
+        filter(!id %in% seals_with_less_than_5_days) %>%
+        filter(trip == 1, SUS == FALSE)
 
     # Resample data function
     resample_data <- function(df, interval = "1 day") {
@@ -71,8 +78,10 @@ preprocess_seal_particle_data <- function(seal_data_path = "./Output/tracks_proc
         dplyr::group_by(id) %>%
         dplyr::mutate(days_since_start = difftime(date, min(date), units = "day"))
 
-    # Ensure both dataframes have the same number of rows per id
-    stopifnot(all(table(locpt_matched$id) == table(locw_matched$id)))
+    # error
+    if (nrow(locpt_matched) != nrow(locw_matched)) {
+        stop("particle and seal dataframes do not have the same number of rows per id")
+    }
 
     # Sort both dataframes by id and date to ensure alignment
     locpt_matched <- locpt_matched %>% dplyr::arrange(id, date)
