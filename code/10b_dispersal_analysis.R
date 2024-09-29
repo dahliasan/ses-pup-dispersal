@@ -12,9 +12,7 @@
     conflicts_prefer(dplyr::summarise, dplyr::filter, dplyr::lag, purrr::map, .quiet = TRUE)
 
     # load functions
-    source("./code/functions.r")
-    source("code/convert2polarsf.R")
-    load("baseInfo.Rdata")
+    source("code/functions/functions.R")
 
     # Calculate bearings function
     calculate_bearings <- function(data) {
@@ -44,11 +42,13 @@
 
         # Determine if each seal is following the particle mean bearing
         results <- map_dfr(seal_ids, function(id) {
-            seal_bearings <- seal_data_bearings %>%
+            this_seal <- seal_data_bearings %>%
                 filter(id == !!id) %>%
                 filter(days_since_start <= median_days_to_max) %>%
+                filter(!is.na(bearing))
+
+            seal_bearings <- this_seal %>%
                 pull(bearing) %>%
-                na.omit() %>%
                 make_circular()
 
             seal_mean_bearing <- mean(seal_bearings)
@@ -65,6 +65,7 @@
 
             df <- tibble(
                 id = id,
+                data = list(this_seal),
                 seal_mean_bearing = as.numeric(seal_mean_bearing),
                 overall_particle_mean = as.numeric(overall_particle_mean),
                 bearing_difference = bearing_difference,
@@ -155,7 +156,7 @@
         seal_following_particle <- calculate_is_seal_following(seal_data_bearings, particle_data_bearings, critical_period)
 
         # Compare to seal survival
-        survival_data <- get_survival()
+        survival_data <- get_survival_data()
 
         # Join survival data to seal following particle data
         seal_following_particle <- seal_following_particle %>%
@@ -287,84 +288,14 @@
             cat("Particle data path:", particle_data_path, "\n")
             cat("Output path:", output_path, "\n\n")
 
-            # Load data
-            cat("Loading seal data\n")
-            locw <- readRDS(seal_data_path)
-
-
-            cat("Loading particle data\n")
-            locpt <- readRDS(particle_data_path)
-
-            cat("Preprocessing particle data\n")
-            locpt <- locpt %>% mutate(date = with_tz(date, tzone = "UTC"))
-
-            cat("Preprocessing seal data\n")
-            # Add this line to convert the spatial object to a regular dataframe
-            locw <- locw %>% st_drop_geometry()
-
-            # Data preprocessing
-            locpt <- locpt %>% mutate(date = with_tz(date, tzone = "UTC"))
-
-            # Identify and remove seals with no weanmass data
-            all_data_weaners <- readRDS("./Output/all_data_combined.rds")
-            seals_with_no_weanmass <- all_data_weaners %>%
-                group_by(id) %>%
-                summarise(weanmass = mean(weanmass, na.rm = TRUE)) %>%
-                filter(is.na(weanmass)) %>%
-                pull(id)
-
-            # Prepare locw data
-            locw <- locw %>%
-                filter(!id %in% seals_with_no_weanmass) %>%
-                filter(trip == 1, SUS == FALSE) # only keep first trip
-
-            # Resample data function
-            resample_data <- function(df, interval = "1 day") {
-                if ("sf" %in% class(df)) {
-                    cat("Converting spatial object to dataframe\n")
-                    df <- df %>% st_drop_geometry()
-                }
-                df %>%
-                    mutate(date = floor_date(date, unit = interval)) %>%
-                    group_by(id, date) %>%
-                    summarise(across(everything(), ~ mean(.x, na.rm = TRUE))) %>%
-                    ungroup()
-            }
-
-            # Resample both datasets
-            locpt_resampled <- resample_data(locpt, interval = "1 day")
-            cat("Resampling seal data\n")
-            locw_resampled <- locw %>%
-                select(id, date, lat, lon) %>%
-                resample_data(interval = "1 day")
-
-            # Match date range function
-            match_date_range <- function(df1, df2) {
-                df1 %>%
-                    inner_join(df2 %>% select(id, date), by = c("id", "date"))
-            }
-
-            locpt_matched <- match_date_range(locpt_resampled, locw_resampled)
-            locw_matched <- match_date_range(locw_resampled, locpt_resampled)
-
-            # Calculate days since start
-            locpt_matched <- locpt_matched %>%
-                group_by(id) %>%
-                mutate(days_since_start = difftime(date, min(date), units = "day"))
-            locw_matched <- locw_matched %>%
-                group_by(id) %>%
-                mutate(days_since_start = difftime(date, min(date), units = "day"))
-
-            # Ensure both dataframes have the same number of rows per id
-            stopifnot(all(table(locpt_matched$id) == table(locw_matched$id)))
-
-            # Sort both dataframes by id and date to ensure alignment
-            locpt_matched <- locpt_matched %>% arrange(id, date)
-            locw_matched <- locw_matched %>% arrange(id, date)
+            data_list <- preprocess_seal_particle_data(
+                seal_data_path = seal_data_path,
+                particle_data_path = particle_data_path
+            )
 
             # Run analysis
-            seal_data <- locw_matched
-            particle_data <- locpt_matched
+            seal_data <- data_list$locw_matched
+            particle_data <- data_list$locpt_matched
         }
 
         results <- run_analysis(seal_data = seal_data, particle_data = particle_data)
@@ -393,7 +324,7 @@
         dev.off()
 
         print("Individual seal bearing compared to particle mean bearing summary:")
-        print(Hmisc::describe(results$seal_following_particle))
+        print(Hmisc::describe(results$seal_following_particle %>% select(-data)))
 
         print("Following x Survived contingency table:")
         print(results$contingency_table)
