@@ -20,7 +20,7 @@ Model selection was performed using the dredge function from the MuMIn package, 
 
 Statistical Analysis and Visualization
 
-All statistical analyses were conducted in R (version [insert version]). We used the `tidyverse` suite of packages for data manipulation and visualization, `sf` for spatial data handling, `patchwork` for combining multiple plots, and `rnaturalearth` for mapping. We generated various plots to visualize the dispersal patterns, including bearings over time, spatial trajectories, and cumulative correlations.
+All statistical analyses were conducted in R (version 4.4.0). We used the `tidyverse` suite of packages for data manipulation and visualization, `sf` for spatial data handling, `patchwork` for combining multiple plots, and `rnaturalearth` for mapping. We generated various plots to visualize the dispersal patterns, including bearings over time, spatial trajectories, and cumulative correlations.
 
 For the survival analysis, we used the `broom` package to extract and summarize model results. We calculated variable importance using the `sw` function from the MuMIn package.
 
