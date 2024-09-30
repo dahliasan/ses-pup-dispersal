@@ -12,7 +12,7 @@ The seal tracking data was processed to provide locations at 12-hour intervals. 
 
 Processing tracks
 
-Only tracked data from weaned seals that left the colony and provided > 10 days of ARGOS data were kept for further analysis. Additionally, some seals had missing weaning mass in the dataset (n = 3) – these were also removed from further analyses. The at-sea locations were filtered using a correlated random walk state-space model with a 4 m s⁻¹ max velocity threshold via the R package aniMotum.
+Only tracked data from weaned seals that left the colony and provided > 10 days of ARGOS data were kept for further analysis. Additionally, some seals had missing weaning mass in the dataset (n = 3) – these were also removed from further analyses. The at-sea locations were filtered using a correlated random walk state-space model with a 4 m s⁻¹ max velocity threshold via the R package `aniMotum`.
 
 Dispersal Analysis
 
@@ -28,12 +28,12 @@ Survival Analysis
 
 Survival data for the seals was obtained from the long-term resight dataset. We conducted survival analyses for two periods: the first trip and the first year post-weaning. We used binomial Generalized Linear Models (GLMs) to investigate the relationship between survival and various predictors, including whether the seal was following currents, weaning mass, birth year, and environmental variables such as sea surface temperature, sea surface height anomaly, eddy kinetic energy, terrain ruggedness index, slope, sea surface temperature gradient, ice coverage, distance to ice edge, chlorophyll concentration, and chlorophyll gradient.
 
-Model selection was performed using the dredge function from the MuMIn package, which fits all possible combinations of predictor variables. We considered models with a delta AICc (Akaike Information Criterion corrected for small sample sizes) of 2 or less to be the best-fitting models. We then used model averaging to account for model selection uncertainty and to obtain robust parameter estimates and relative variable importance.
+Model selection was performed using the dredge function from the `MuMIn` package, which fits all possible combinations of predictor variables. We considered models with a delta AICc (Akaike Information Criterion corrected for small sample sizes) of 2 or less to be the best-fitting models. We then used model averaging to account for model selection uncertainty and to obtain robust parameter estimates and relative variable importance.
 
 Statistical Analysis and Visualization
 
 All statistical analyses were conducted in R (version 4.4.0). We used the `tidyverse` suite of packages for data manipulation and visualization, `sf` for spatial data handling, `patchwork` for combining multiple plots, and `rnaturalearth` for mapping. We generated various plots to visualize the dispersal patterns, including bearings over time, spatial trajectories, and cumulative correlations.
 
-For the survival analysis, we used the `broom` package to extract and summarize model results. We calculated variable importance using the `sw` function from the MuMIn package.
+For the survival analysis, we used the `broom` package to extract and summarize model results. We calculated variable importance using the `sw` function from the `MuMIn` package.
 
 All results, including summary statistics, test results, model outputs, and plots, were saved to a date-stamped output directory for reproducibility and further analysis.
