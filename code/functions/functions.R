@@ -7,6 +7,7 @@ conflicts_prefer(dplyr::summarise, dplyr::filter, dplyr::lag, purrr::map, dplyr:
 source("code/functions/bearing_utils.R")
 source("code/functions/convert2polarsf.R")
 source("code/functions/preprocess_seal_particle_data.R")
+source("code/functions/print_and_save_results.R")
 load("baseInfo.Rdata")
 
 # Custom Functions ---------------------------------------------------------
