@@ -164,7 +164,7 @@
 
         cat("Calculating if seal is following the particle mean bearing\n")
         # Calculate if seal is following the particle mean bearing
-        seal_following_particle <- calculate_is_seal_following(seal_data_bearings, particle_data_bearings, critical_period)
+        seal_following_particle <- calculate_is_seal_following(seal_data_bearings, particle_data_bearings, critical_period, use_critical_period)
 
         # Compare to seal survival
         survival_data <- get_survival_data()
