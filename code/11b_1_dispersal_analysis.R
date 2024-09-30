@@ -314,18 +314,20 @@
         # Generate plots
         plots <- generate_plots(results)
 
-        # Print summary statistics and test results
-        print("Summary of critical period:")
+        # Print summary statistics and test results with added line breaks
+        cat("\n\n--- Summary of critical period ---\n")
         print(psych::describe(results$critical_period))
         print(Hmisc::describe(results$critical_period))
 
-        print("T-test results (if p < 0.05, then the mean maximum correlation is significantly different from 0):")
+        cat("\n\n--- T-test results ---\n")
+        cat("(if p < 0.05, then the mean maximum correlation is significantly different from 0)\n")
         print(results$t_test_result)
 
-        print("Correlation test results (if p < 0.05, then the correlation is significantly different from 0):")
+        cat("\n\n--- Correlation test results ---\n")
+        cat("(if p < 0.05, then the correlation is significantly different from 0)\n")
         print(results$correlation_test)
 
-        print("GAMM model summary:")
+        cat("\n\n--- GAMM model summary ---\n")
         print(summary(results$gamm_model$gam))
 
         ## Save model plots
@@ -334,10 +336,10 @@
         plot(results$gamm_model$gam, all.terms = TRUE, pages = 1)
         dev.off()
 
-        print("Individual seal bearing compared to particle mean bearing summary:")
+        cat("\n\n--- Individual seal bearing compared to particle mean bearing summary ---\n")
         print(Hmisc::describe(results$seal_following_particle %>% select(-data)))
 
-        print("Following x Survived contingency table:")
+        cat("\n\n--- Following x Survived contingency table ---\n")
         print(results$contingency_table)
 
         # Combine all results
