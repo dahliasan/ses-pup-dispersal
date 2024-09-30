@@ -12,7 +12,7 @@ The seal tracking data was processed to provide locations at 12-hour intervals. 
 
 Processing tracks
 
-Only tracked data from weaned seals that left the colony and provided > 10 days of ARGOS data were kept for further analysis. Additionally, some seals had missing weaning mass in the dataset (n = 3) – these were also removed from further analyses. The at-sea locations were filtered using a correlated random walk state-space model with a 4 m s⁻¹ max velocity threshold via the R package foieGras.
+Only tracked data from weaned seals that left the colony and provided > 10 days of ARGOS data were kept for further analysis. Additionally, some seals had missing weaning mass in the dataset (n = 3) – these were also removed from further analyses. The at-sea locations were filtered using a correlated random walk state-space model with a 4 m s⁻¹ max velocity threshold via the R package aniMotum.
 
 Dispersal Analysis
 
