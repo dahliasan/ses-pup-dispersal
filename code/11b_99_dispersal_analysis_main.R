@@ -6,6 +6,8 @@ seal_data_path <- "./Output/tracks_processed_12h.rds"
 # particle_data_path <- "./Output/currently_particleTrace.rds"
 particle_data_path <- "output/particle-trace-186.13m.rds"
 
+use_critical_period <- FALSE
+
 source("code/11b_1_dispersal_analysis.R")
 source("code/11b_2_dispersal_plots.R")
 source("code/11b_3_survival_models.R")

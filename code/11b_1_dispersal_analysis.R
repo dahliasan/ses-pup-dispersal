@@ -34,7 +34,7 @@
     }
 
     # New function to compare seal to current
-    calculate_is_seal_following <- function(seal_data_bearings, particle_data_bearings, critical_period) {
+    calculate_is_seal_following <- function(seal_data_bearings, particle_data_bearings, critical_period, use_critical_period = TRUE) {
         median_days_to_max <- median(critical_period$days_to_max, na.rm = TRUE)
 
         seal_ids <- unique(seal_data_bearings$id)
@@ -51,8 +51,12 @@
         results <- map_dfr(seal_ids, function(id) {
             this_seal <- seal_data_bearings %>%
                 filter(id == !!id) %>%
-                filter(days_since_start <= median_days_to_max) %>%
                 filter(!is.na(bearing))
+
+            if (use_critical_period) {
+                this_seal <- this_seal %>%
+                    filter(days_since_start <= median_days_to_max)
+            }
 
             seal_bearings <- this_seal %>%
                 pull(bearing) %>%
