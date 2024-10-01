@@ -11,9 +11,6 @@
     file <- list.files("output/dispersal_analysis_2", pattern = ".rds", recursive = TRUE, full.names = TRUE) %>% last()
     dispersal_results <- readRDS(file)
 
-    glimpse(dispersal_results$analysis_results)
-    names(dispersal_results)
-
     seal_following_particle <- dispersal_results$analysis_results$seal_following_particle %>%
         select(-contains("watson"))
 
