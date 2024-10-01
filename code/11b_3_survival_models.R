@@ -17,6 +17,7 @@ library(lubridate)
 library(sf)
 library(MuMIn)
 library(broom)
+library(DHARMa)
 
 # Do binomial GLM for survival
 modal_data <- weaner_locs_sf %>%
@@ -46,6 +47,14 @@ model_trip <- glm(survive_trip_1 ~ is_following * weanmass + birthyear + sst + s
 
 cat("\n\n--- Summary of model_trip (global model) ---\n")
 print(summary(model_trip))
+
+# Add DHARMa model checking for trip survival model
+cat("\n\n--- DHARMa model checking for trip survival model ---\n")
+dharma_trip <- simulateResiduals(fittedModel = model_trip, n = 1000)
+plot(dharma_trip)
+testDispersion(dharma_trip)
+testZeroInflation(dharma_trip)
+testOutliers(dharma_trip)
 
 dredge_trip <- dredge(model_trip)
 
@@ -89,6 +98,14 @@ model_year <- glm(survive_year_1 ~ is_following * weanmass + birthyear + sst + s
 
 cat("\n\n--- Summary of model_year (global model) ---\n")
 print(summary(model_year))
+
+# Add DHARMa model checking for year survival model
+cat("\n\n--- DHARMa model checking for year survival model ---\n")
+dharma_year <- simulateResiduals(fittedModel = model_year, n = 1000)
+plot(dharma_year)
+testDispersion(dharma_year)
+testZeroInflation(dharma_year)
+testOutliers(dharma_year)
 
 dredge_year <- dredge(model_year)
 
