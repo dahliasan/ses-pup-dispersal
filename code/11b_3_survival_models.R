@@ -24,7 +24,7 @@ modal_data <- weaner_locs_sf %>%
     st_drop_geometry() %>%
     distinct()
 
-names(all_data_weaners)
+# names(all_data_weaners)
 
 predictor_vars <- c("sst", "ssha", "eke", "tri", "slope", "SSTgrad", "ice", "dist_to_ice_m", "chl", "chlgrad")
 
@@ -34,22 +34,26 @@ predictor_data <- all_data_weaners %>%
 
 modal_data <- modal_data %>% left_join(predictor_data, by = "id")
 
-modal_data %>% summary()
+cat("\n\nModal data summary:\n")
+print(modal_data %>% summary())
 
-model_trip <- glm(survive_trip_1 ~ is_following * weanmass + birthyear + sst + ssha + eke + tri + slope + SSTgrad + ice + dist_to_ice_m + chl + chlgrad,
+source("code/11b_3.1_get_high_cor_vars.R")
+# highly correlated variables: "tri" "dist_to_ice_m" "chl"
+
+model_trip <- glm(survive_trip_1 ~ is_following * weanmass + birthyear + sst + ssha + eke + slope + SSTgrad + ice + chlgrad,
     data = modal_data, family = binomial(link = "logit"), na.action = "na.fail"
 )
+
+cat("\n\n--- Summary of model_trip (global model) ---\n")
+print(summary(model_trip))
 
 dredge_trip <- dredge(model_trip)
 
 best_models <- get.models(dredge_trip, subset = delta <= 2)
 
-best_models %>% summary()
-
 # Create a function to extract important metrics
 extract_model_info <- function(model, model_name) {
     glance_info <- glance(model)
-
     tibble(
         model_name = model_name,
         formula = paste(format(formula(model)), collapse = " "),
@@ -63,61 +67,48 @@ extract_model_info <- function(model, model_name) {
 }
 
 # Apply the function to each model
-model_summary <- map2_dfr(best_models, names(best_models), extract_model_info)
-
-# Add delta AICc
-model_summary <- model_summary %>%
+model_summary <- map2_dfr(best_models, names(best_models), extract_model_info) %>%
     mutate(delta_AICc = AICc - min(AICc)) %>% # Use AICc instead of AIC
     arrange(delta_AICc)
 
-print("Model summary for trip survival:")
+cat("\n\n--- Model selection summary for trip survival ---\n")
 print(model_summary)
 
 avg_model <- model.avg(best_models)
-summary(avg_model)
+cat("\n\n--- Model averaging summary for trip survival ---\n")
+print(summary(avg_model))
 
 importance <- sw(dredge_trip)
-print("Variable importance for trip survival:")
+cat("\n\n--- Variable importance for trip survival ---\n")
 print(importance)
 
-# Interpretation of variable importance:
-# - sst (0.71) and is_following (0.58) show the strongest evidence of importance,
-#   appearing in many of the best models.
-# - dist_to_ice_m (0.46) shows moderate importance.
-# - eke, ssha, ice, SSTgrad, slope, tri, weanmass, birthyear, chlgrad, and chl
-#   (all between 0.24-0.35) show weaker evidence of importance.
-# - The interaction is_following:weanmass (0.03) shows very little evidence of importance.
-#
-# This suggests that sea surface temperature and whether the seal is following
-# currents are the most influential factors in the model, while the interaction
-# between following currents and wean mass is least important.
-
-model_year <- glm(survive_year_1 ~ is_following * weanmass + birthyear + sst + ssha + eke + tri + slope + SSTgrad + ice + dist_to_ice_m + chl + chlgrad,
+## Year survival
+model_year <- glm(survive_year_1 ~ is_following * weanmass + birthyear + sst + ssha + eke + slope + SSTgrad + ice + chlgrad,
     data = modal_data, family = binomial(link = "logit"), na.action = "na.fail"
 )
+
+cat("\n\n--- Summary of model_year (global model) ---\n")
+print(summary(model_year))
 
 dredge_year <- dredge(model_year)
 
 best_models_year <- get.models(dredge_year, subset = delta <= 2)
 
-best_models_year %>% summary()
-
-model_summary_year <- map2_dfr(best_models_year, names(best_models_year), extract_model_info)
-
-model_summary_year <- model_summary_year %>%
+model_summary_year <- map2_dfr(best_models_year, names(best_models_year), extract_model_info) %>%
     mutate(delta_AICc = AICc - min(AICc)) %>%
     arrange(delta_AICc)
 
-print("Model summary for year survival:")
+cat("\n\n--- Model selection summary for year survival ---\n")
 print(model_summary_year)
 
 avg_model_year <- model.avg(best_models_year)
-summary(avg_model_year)
+cat("\n\n--- Model averaging summary for year survival ---\n")
+print(summary(avg_model_year))
 
 importance_year <- sw(dredge_year)
-print("Variable importance for year survival:")
+cat("\n\n--- Variable importance for year survival ---\n")
 print(importance_year)
 
-print("Analysis complete. Output saved.")
+cat("\n\n--- Analysis complete. Output saved. ---\n")
 
 sink()
