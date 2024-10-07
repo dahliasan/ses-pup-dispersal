@@ -8,7 +8,7 @@
     source("code/functions/functions.R")
 
     # read in the data all_results
-    file <- list.files("output/dispersal_analysis_2", pattern = ".rds", recursive = TRUE, full.names = TRUE) %>% last()
+    file <- list.files(output_path, pattern = ".rds", full.names = TRUE)
     dispersal_results <- readRDS(file)
 
     seal_following_particle <- dispersal_results$analysis_results$seal_following_particle %>%
@@ -60,7 +60,8 @@
         unnest_wider(end_coords, names_sep = "_") %>%
         mutate(
             survive_trip_1 = if_else(survive_trip_1 == TRUE, "survived", "died"),
-        )
+        ) %>%
+        left_join(seal_following_particle %>% select(id, is_following), by = "id")
 
     particle_endpoints <- weaner_locs_sf %>%
         group_by(id) %>%
@@ -83,34 +84,89 @@
     weaner_locs_sf <- weaner_locs_sf %>%
         arrange(survive_trip_1, id)
 
+    caption <- paste("Mean particle bearing", seal_following_particle$overall_particle_mean[1] %>% round())
+
+    # seals following
+    seals_following <- seal_following_particle %>%
+        filter(is_following) %>%
+        pull(id)
+
+    seals_not_following <- seal_following_particle %>%
+        filter(!is_following) %>%
+        pull(id)
+
+    create_dispersal_plot <- function(seal_data, filter_following, title, ncol = 4) {
+        ggplot() +
+            geom_sf(data = world, fill = "gray80") +
+            geom_sf(data = seal_data, size = 0.1, color = "gray", alpha = 0.5) +
+            geom_segment(
+                data = endpoints %>% filter(id %in% filter_following),
+                aes(x = start_x, y = start_y, xend = end_coords_1, yend = end_coords_2, color = survive_trip_1),
+                arrow = arrow(length = unit(2, "mm")),
+            ) +
+            geom_segment(
+                data = particle_endpoints %>% filter(id %in% filter_following),
+                aes(x = start_x, y = start_y, xend = end_coords_1, yend = end_coords_2),
+                arrow = arrow(length = unit(2, "mm")),
+                color = "black"
+            ) +
+            theme_bw() +
+            facet_wrap(~id, ncol = ncol) +
+            coord_sf(crs = st_crs(seal_data)) +
+            labs(x = "Longitude", y = "Latitude", title = title)
+    }
+
     # Create the plot
-    p <- ggplot() +
-        geom_sf(data = world, fill = "gray80") +
-        geom_sf(data = weaner_locs_sf, size = 0.1, color = "gray", alpha = 0.5) +
-        geom_segment(
-            data = endpoints,
-            aes(x = start_x, y = start_y, xend = end_coords_1, yend = end_coords_2, color = survive_trip_1),
-            arrow = arrow(length = unit(2, "mm")),
-        ) +
-        geom_segment(
-            data = particle_endpoints,
-            aes(x = start_x, y = start_y, xend = end_coords_1, yend = end_coords_2),
-            arrow = arrow(length = unit(2, "mm")),
-            color = "black"
-        ) +
-        theme_bw() +
-        facet_wrap(~id) +
-        coord_sf(crs = st_crs(weaner_locs_sf)) +
+    p1 <- weaner_locs_sf %>%
+        filter(id %in% seals_following) %>%
+        create_dispersal_plot(seals_following, "Following", ncol = 5)
+
+    p2 <- weaner_locs_sf %>%
+        filter(id %in% seals_not_following) %>%
+        create_dispersal_plot(seals_not_following, "Not following", ncol = 3)
+
+    p <- p1 + p2 +
+        labs(caption = caption) +
+        plot_layout(ncol = 2, guides = "collect", widths = c(1.5, 1)) &
         theme(
+            legend.position = "bottom",
             # make facet text small
-            strip.text = element_text(size = 8),
-            axis.text = element_text(size = 8),
-            axis.title = element_text(size = 8),
+            strip.text = element_text(size = 10),
+            axis.text = element_text(size = 10),
+            axis.title = element_text(size = 10),
             # remove grid lines
             panel.grid = element_blank()
-        ) +
-        lims(x = bbox[c("xmin", "xmax")] + c(-0.5, 0.5), y = bbox[c("ymin", "ymax")] + c(-0.5, 0.5)) +
-        labs(x = "Longitude", y = "Latitude")
+        ) &
+        lims(x = bbox[c("xmin", "xmax")] + c(-0.1, 0.1), y = bbox[c("ymin", "ymax")] + c(-0.1, 0.1))
 
-    ggsave(file.path(output_path, "dispersal_plot.png"), plot = p, width = 12, height = 10, dpi = 300, bg = "white")
+    ggsave(file.path(output_path, "dispersal_plot.png"), plot = p, width = 15, height = 10, dpi = 300, bg = "white")
+}
+
+{
+    ## Plot particle trace
+    particle_trace <- readRDS(particle_data_path) %>%
+        na.omit()
+
+    particle_trace_sf <- convert2polarsf(particle_trace, remove_coords = FALSE)
+
+    # Group the data by particle ID and convert to lines
+    particle_trace_lines <- particle_trace_sf %>%
+        group_by(id) %>%
+        summarise(do_union = FALSE) %>%
+        st_cast("LINESTRING")
+
+    bbox <- st_bbox(particle_trace_sf)
+
+    p <- ggplot() +
+        geom_sf(data = particle_trace_lines, size = 0.5, alpha = 0.5, color = "blue") +
+        geom_sf(data = world, fill = "gray80") +
+        theme_bw() +
+        coord_sf(crs = st_crs(particle_trace_sf)) +
+        theme(
+            panel.grid = element_blank()
+        ) +
+        lims(x = bbox[c("xmin", "xmax")] + c(-0.1, 0.1), y = bbox[c("ymin", "ymax")] + c(-0.1, 0.1)) +
+        labs(x = "Longitude", y = "Latitude", title = "Particle trace")
+
+    ggsave(file.path(output_path, "particle_trace.png"), plot = p, width = 10, height = 10, dpi = 300, bg = "white")
 }
