@@ -14,6 +14,10 @@ Processing tracks
 
 Only tracked data from weaned seals that left the colony and provided > 10 days of ARGOS data were kept for further analysis. Additionally, some seals had missing weaning mass in the dataset (n = 3) – these were also removed from further analyses. The at-sea locations were filtered using a correlated random walk state-space model with a 4 m s⁻¹ max velocity threshold via the R package `aniMotum`.
 
+Particle Trace Generation
+
+We compared two datasets for generating particle traces: the Copernicus Global Ocean Physics Reanalysis (186m depth currents) and the Global Ocean Gridded SSALTO/DUACS Sea Surface Height L4 (surface currents). Preliminary analysis showed that seal tracks aligned more closely with surface particle traces (SI Fig. 1), which also provided more complete data (SI Fig. 2). Consequently, we used the surface current dataset for our analysis, allowing for a more comprehensive representation of ocean currents encountered by seals during dispersal.
+
 Dispersal Analysis
 
 We conducted a comprehensive dispersal analysis to investigate the relationship between seal movements and ocean currents. For each seal and corresponding particle track, we calculated bearings between each sequential location using the `geosphere` package in R. This provided us with a series of bearings representing the direction of movement for both seals and particles over time. We then computed cumulative circular correlations between these seal and particle bearings using the `circular` package to assess the similarity in movement patterns.
