@@ -3,7 +3,7 @@
 ## returns an sf object that is transformed with polar projection
 
 convert2polarsf <- function(data,
-                            crs = "+proj=stere +lon_0=170 +lat_0=-90 +units=km +datum=WGS84",
+                            crs = "+proj=laea +lat_0=-90 +lon_0=170 +datum=WGS84 +units=km +ellps=WGS84 +no_defs",
                             proj = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0",
                             remove_coords = TRUE) {
   require(sf)

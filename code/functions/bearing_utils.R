@@ -30,3 +30,20 @@ whichZone <- function(theta) {
         return("NW-N")
     }
 }
+
+
+# Calculate bearings function
+calculate_bearings <- function(data) {
+    data %>%
+        group_by(id) %>%
+        mutate(bearing = geosphere::bearing(cbind(lon, lat), cbind(lead(lon), lead(lat)))) %>%
+        mutate(bearing = (bearing + 360) %% 360) %>%
+        mutate(bearing = make_circular(bearing))
+}
+
+
+# Create circular object
+make_circular <- function(data) {
+    data %>%
+        circular(units = "degrees", template = "geographics", modulo = "2pi")
+}
