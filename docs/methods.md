@@ -20,19 +20,27 @@ We compared two datasets for generating particle traces: the Copernicus Global O
 
 Dispersal Analysis
 
-We conducted a comprehensive dispersal analysis to investigate the relationship between seal movements and ocean currents. For each seal and corresponding particle track, we calculated bearings between each sequential location using the `geosphere` package in R. This provided us with a series of bearings representing the direction of movement for both seals and particles over time. We then computed cumulative circular correlations between these seal and particle bearings using the `circular` package to assess the similarity in movement patterns.
+We conducted a comprehensive dispersal analysis to investigate the relationship between seal movements and ocean currents. For each seal and corresponding particle track, we calculated bearings between each sequential location using the `geosphere` package in R. This provided us with a series of bearings representing the direction of movement for both seals and particles over time.
 
-To identify critical periods in the seals' dispersal, we determined the maximum correlation and the time to reach this maximum for each individual. We used the median of these times to maximum correlation across all seals as the critical period. For each seal, we calculated the mean bearing during this critical period. We tested whether the mean maximum correlation differed significantly from zero using a one-sample t-test. Additionally, we examined the relationship between the time to maximum correlation and the maximum correlation value using a correlation test.
+To compare seal and particle movements, we employed several analytical approaches:
 
-To account for individual variability and temporal patterns, we fitted a Generalized Additive Mixed Model (GAMM) using the `mgcv` package. The model included a smooth term for days since the start of the journey and a random effect for individual seals.
+1. We calculated the angular difference between seal and particle bearings at each time point.
+2. We computed cumulative mean bearings for both seals and particles over time.
+3. We implemented a sliding window approach to calculate mean bearings, using a window of 5 time points before and after each location.
 
-We compared each seal's mean bearing during the critical period to the overall mean particle bearing to determine if seals were following the prevailing currents. The overall mean particle bearing was calculated using all particle traces in the study area, providing a representation of the general current direction across the entire region. A seal was considered to be "following" if its mean bearing was within 45 degrees of this overall particle mean bearing. This classification method allowed us to assess whether seals were generally aligning their movement with the dominant current patterns in the region, and was later used as a factor in our survival analysis.
+To classify seals as "following" or "not following" currents, we compared the overall mean bearing of each seal to the corresponding particle trace. Seals with a mean bearing within 45 degrees of the particle trace mean bearing were classified as "following" currents.
+
+Statistical Analysis
+
+We used Watson's Two-Sample Test of Homogeneity to compare the distributions of bearings between different groups (e.g., weaners vs. females, weaners vs. particles). This test allows for the comparison of circular data distributions.
 
 Survival Analysis
 
-Survival data for the seals was obtained from the long-term resight dataset. We conducted survival analyses for two periods: the first trip and the first year post-weaning. We used binomial Generalized Linear Models (GLMs) to investigate the relationship between survival and various predictors, including whether the seal was following currents, weaning mass, birth year, and environmental variables such as sea surface temperature, sea surface height anomaly, eddy kinetic energy, terrain ruggedness index, slope, sea surface temperature gradient, ice coverage, distance to ice edge, chlorophyll concentration, and chlorophyll gradient.
+We conducted survival analyses for two periods: the first trip and the first year post-weaning. We used binomial Generalized Linear Models (GLMs) to investigate the relationship between survival and various predictors, including whether the seal was following currents, weaning mass, birth year, and environmental variables such as sea surface temperature (SST), sea surface height anomaly (SSHA), eddy kinetic energy (EKE), slope, SST gradient, ice coverage, chlorophyll gradient, and others.
 
 Model selection was performed using the dredge function from the `MuMIn` package, which fits all possible combinations of predictor variables. We considered models with a delta AICc (Akaike Information Criterion corrected for small sample sizes) of 2 or less to be the best-fitting models. We then used model averaging to account for model selection uncertainty and to obtain robust parameter estimates and relative variable importance.
+
+We also employed the DHARMa package to assess model fit, checking for issues such as overdispersion, zero-inflation, and outliers.
 
 Statistical Analysis and Visualization
 
