@@ -2,22 +2,38 @@ Results
 
 Dispersal Analysis
 
-We analyzed the dispersal patterns of 45 weaned elephant seal pups. The cumulative circular correlation between seal and particle bearings reached a maximum value (mean ± SD: 0.83 ± 0.36) after a median of 4 days (range: 2-180 days). A one-sample t-test revealed that the mean maximum correlation was significantly different from zero (t = 15.313, df = 44, p < 0.001), indicating a strong relationship between seal movements and ocean currents.
+We analyzed the dispersal patterns of 45 weaned elephant seal pups and compared them to adult females and simulated particle tracks representing ocean currents. 
 
-A significant negative correlation was found between the time to maximum correlation and the maximum correlation value (r = -0.39, p = 0.008), suggesting that seals achieving higher correlations with ocean currents did so more quickly.
+Comparison of Bearings
 
-The Generalized Additive Mixed Model (GAMM) revealed significant effects of both time since the start of the journey (F = 91.86, p < 0.001) and individual variation (F = 216.51, p < 0.001) on the correlation between seal and particle bearings. The model explained 68.8% of the variance in the data (R-sq.(adj) = 0.688).
+Watson's Two-Sample Test of Homogeneity revealed significant differences in bearing distributions between weaners and adult females (Test Statistic: 4.4278, p < 0.001), as well as between weaners and surface particles (Test Statistic: 2.5943, p < 0.001). The mean bearing for weaners was 111.808° (SD = 1.408°), compared to 122.428° (SD = 1.812°) for adult females and 114.676° (SD = 1.209°) for surface particles.
 
-Of the 45 seals analyzed, 32 (71.1%) were classified as "following" the prevailing currents, with their mean bearings within 45 degrees of the overall particle mean bearing. The mean bearing difference between seals and particles was 50.66 degrees (range: 1.81-218.68 degrees).
+When analyzing summarized bearings by individual, the differences remained significant but less pronounced. The mean bearing for weaners was 119.944° (SD = 0.969°), compared to 138.488° (SD = 1.227°) for adult females (Test Statistic: 0.221, 0.01 < p < 0.05) and 114.822° (SD = 0.629°) for surface particles (Test Statistic: 0.1768, 0.05 < p < 0.10).
+
+Current Following Behavior
+
+Of the 45 seals analyzed, 29 (64.4%) were classified as "following" the prevailing currents, with their mean bearings within 45 degrees of the overall particle mean bearing. The angular difference between seal and particle bearings varied over time and among individuals, with some seals showing consistent alignment with currents and others diverging.
 
 Survival Analysis
+Overall, 29 out of 45 seals (64.4%) survived their first trip, while 17 out of 45 (37.8%) 
+survived their first year.
 
-For first-trip survival, the best-fitting model included the predictors 'is_following' and 'sea surface temperature' (SST). The model selection process identified three top models with ΔAICc < 2, all of which included these two variables. Variable importance analysis revealed that SST (0.71) and 'is_following' (0.58) were the most important predictors of first-trip survival, followed by distance to ice edge (0.46).
+First-trip Survival
 
-Seals classified as following currents had a higher survival rate for the first trip (75.0%) compared to those not following currents (38.5%).
+For first-trip survival, the model selection process identified 11 top models with ΔAICc < 2. The best-fitting model included the predictors 'is_following' and 'slope'. Variable importance analysis revealed that 'is_following' (0.57), slope (0.45), and sea surface temperature gradient (SSTgrad) (0.44) were the most important predictors of first-trip survival.
 
-For first-year survival, the model selection process identified 22 models with ΔAICc < 2, indicating substantial model uncertainty. The top model included only sea surface height anomaly (SSHA) as a predictor. Variable importance analysis for first-year survival showed that weaning mass (0.56), SSHA (0.50), and 'is_following' (0.46) were the most important predictors.
+The model-averaged results showed a positive effect of following currents on survival (estimate = 1.021, SE = 0.861), although this effect was not statistically significant at the 0.05 level (p = 0.242). Slope also showed a positive relationship with survival (estimate = 0.465, SE = 0.820, p = 0.575).
 
-Overall, 29 out of 45 seals (64.4%) survived their first trip, while 17 out of 45 (37.8%) survived their first year. These survival rates align with the contingency table data for 'is_following' and survival status.
+First-year Survival
 
-These results suggest that both oceanographic factors and the tendency to follow currents play important roles in the dispersal and survival of weaned elephant seal pups, with different factors influencing survival over different time scales.
+For first-year survival, the model selection process identified 26 models with ΔAICc < 2, indicating substantial model uncertainty. The top model included slope, sea surface height anomaly (SSHA), and eddy kinetic energy (EKE) as predictors.
+
+Variable importance analysis for first-year survival showed that weaning mass (0.77), 'is_following' (0.57), and SSHA (0.56) were the most important predictors, followed by slope (0.39) and chlorophyll gradient (0.38).
+
+The model-averaged results for first-year survival indicated a positive effect of weaning mass (estimate = 0.022, SE = 0.012, p = 0.074) and following currents (estimate = 1.589, SE = 0.946, p = 0.093) on survival, although these effects were marginally significant.
+
+Model Diagnostics
+
+DHARMa model checking did not reveal any significant issues with model fit, such as overdispersion or zero-inflation, for either the first-trip or first-year survival models.
+
+Overall, these results suggest that both oceanographic factors and the tendency to follow currents play important roles in the dispersal and survival of weaned elephant seal pups, with different factors influencing survival over different time scales. The analysis highlights the complex interplay between individual behavior, environmental conditions, and survival outcomes in this species.
