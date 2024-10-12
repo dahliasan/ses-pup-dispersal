@@ -8,7 +8,7 @@ It is important to note that the weaned pups in our dataset were not selected ra
 
 We also obtained 67 adult female post-moult winter migration tracks from Macquarie Island which were collected from February-October in 2000-2005 and 2010 [41]. Out of the 67 tracks, 30 were obtained by SRDLs and the remaining 37 by geolocation light loggers (GLS; from time-depth recorders, Wildlife Computers, Redmond, USA). GLS tags are accurate to ~70-120 km for southern elephant seals [42,43]. Some of these tracks did not start at the colony and were removed from further analyses.
 
-The seal tracking data was processed to provide locations at 1-day intervals. Concurrently, we utilized particle tracking data to represent ocean currents in the study area. Both datasets were preprocessed and matched temporally and spatially using custom R functions.
+The seal tracking data was processed to provide locations at 1-day intervals. Concurrently, we created particle traces for each seal, for the period of their first foraging trip,using the `currently` R package to represent ocean currents in the study area.
 
 Processing tracks
 
