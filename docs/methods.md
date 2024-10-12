@@ -36,7 +36,7 @@ We used Watson's Two-Sample Test of Homogeneity to compare the distributions of 
 
 Survival Analysis
 
-We conducted survival analyses for two periods: the first trip and the first year post-weaning. We used binomial Generalized Linear Models (GLMs) to investigate the relationship between survival and various predictors, including whether the seal was following currents, weaning mass, birth year, and environmental variables such as sea surface temperature (SST), sea surface height anomaly (SSHA), eddy kinetic energy (EKE), slope, SST gradient, ice coverage, chlorophyll gradient, and others.
+We conducted survival analyses for two periods: the first trip and the first year post-weaning. We used binomial Generalized Linear Models (GLMs) to investigate the relationship between survival and various predictors, including whether the seal was following currents, weaning mass, birth year, and environmental variables such as sea surface temperature (SST), sea surface height anomaly (SSHA), eddy kinetic energy (EKE), slope, SST gradient, ice coverage, chlorophyll gradient, and others. Seals with missing weaning mass were excluded from the survival analysis.
 
 Model selection was performed using the dredge function from the `MuMIn` package, which fits all possible combinations of predictor variables. We considered models with a delta AICc (Akaike Information Criterion corrected for small sample sizes) of 2 or less to be the best-fitting models. We then used model averaging to account for model selection uncertainty and to obtain robust parameter estimates and relative variable importance.
 
