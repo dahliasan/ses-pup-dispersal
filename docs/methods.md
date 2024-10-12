@@ -26,7 +26,8 @@ To compare seal and particle movements, we employed several analytical approache
 
 1. We calculated the angular difference between seal and particle bearings at each time point.
 2. We computed cumulative mean bearings for both seals and particles over time.
-3. We implemented a sliding window approach to calculate mean bearings, using a window of 5 time points before and after each location.
+
+These methods allowed us to assess both the immediate alignment of seal movements with currents and the overall trend of seal travel directions in relation to prevailing currents throughout their journeys.
 
 To classify seals as "following" or "not following" currents, we compared the overall mean bearing of each seal to the corresponding particle trace. Seals with a mean bearing within 45 degrees of the particle trace mean bearing were classified as "following" currents. This 45-degree threshold was chosen because it represents a reasonable compromise between strict alignment with currents and allowing for some deviation due to other factors influencing seal movement (e.g., foraging behavior, individual preferences). 
 
