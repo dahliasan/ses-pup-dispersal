@@ -8,7 +8,7 @@ It is important to note that the weaned pups in our dataset were not selected ra
 
 We also obtained 67 adult female post-moult winter migration tracks from Macquarie Island which were collected from February-October in 2000-2005 and 2010 [41]. Out of the 67 tracks, 30 were obtained by SRDLs and the remaining 37 by geolocation light loggers (GLS; from time-depth recorders, Wildlife Computers, Redmond, USA). GLS tags are accurate to ~70-120 km for southern elephant seals [42,43]. Some of these tracks did not start at the colony and were removed from further analyses.
 
-The seal tracking data was processed to provide locations at 12-hour intervals. Concurrently, we utilized particle tracking data to represent ocean currents in the study area. Both datasets were preprocessed and matched temporally and spatially using custom R functions.
+The seal tracking data was processed to provide locations at 1-day intervals. Concurrently, we utilized particle tracking data to represent ocean currents in the study area. Both datasets were preprocessed and matched temporally and spatially using custom R functions.
 
 Processing tracks
 
@@ -28,7 +28,7 @@ To compare seal and particle movements, we employed several analytical approache
 2. We computed cumulative mean bearings for both seals and particles over time.
 3. We implemented a sliding window approach to calculate mean bearings, using a window of 5 time points before and after each location.
 
-To classify seals as "following" or "not following" currents, we compared the overall mean bearing of each seal to the corresponding particle trace. Seals with a mean bearing within 45 degrees of the particle trace mean bearing were classified as "following" currents.
+To classify seals as "following" or "not following" currents, we compared the overall mean bearing of each seal to the corresponding particle trace. Seals with a mean bearing within 45 degrees of the particle trace mean bearing were classified as "following" currents. This 45-degree threshold was chosen because it represents a reasonable compromise between strict alignment with currents and allowing for some deviation due to other factors influencing seal movement (e.g., foraging behavior, individual preferences). 
 
 Statistical Analysis
 
