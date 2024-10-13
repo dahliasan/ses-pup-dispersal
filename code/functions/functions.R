@@ -69,7 +69,8 @@ get_survival_data <- function() {
         weanmass > 135 ~ "heavy",
         weanmass < 96 ~ "light",
         TRUE ~ "avg"
-      )
+      ),
+      weanmass = ifelse(is.na(weanmass), NA, weanmass)
     )
 }
 
