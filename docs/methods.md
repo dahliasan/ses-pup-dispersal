@@ -10,7 +10,7 @@ We also obtained 67 adult female post-moult winter migration tracks from Macquar
 
 Processing tracks
 
-Only tracked data from weaned seals that left the colony and provided more than 10 days of ARGOS data were retained for further analysis. The at-sea locations provided by ARGOS were filtered using a correlated random walk state-space model with a 4 m s⁻¹ maximum velocity threshold via the R package aniMotum [45]. We used a 1-day time step to provide daily location estimates, simplifying the dataset while still capturing the essential movement patterns of each seal. Adult female tracks were processed using the same methods to ensure consistency in data handling.
+Only tracked data from weaned seals that left the colony and provided more than 10 days of ARGOS data were retained for further analysis. The at-sea locations provided by ARGOS were filtered using a correlated random walk state-space model with a 4 m s⁻¹ maximum velocity threshold via the R package aniMotum [45]. We used a 1-day time step to provide daily location estimates, simplifying the dataset while still capturing the essential movement patterns of each seal. Adult female tracks, which were initially received in 6-hour timesteps, were reinterpolated to 1-day intervals using the same methods to ensure consistency in data handling across all datasets.
 
 Particle trace generation
 
