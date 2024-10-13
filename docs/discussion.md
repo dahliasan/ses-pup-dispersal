@@ -1,6 +1,6 @@
 Discussion
 
-Juvenile survival is a key determinant of population trajectory, particularly in long-lived slowly reproducing species like elephant seals [citation needed]. Our study investigated the foraging movement of naïve, newly weaned elephant seal pups in relation to ocean currents, environmental variables, and their subsequent survival. We found that travelling with the flow of predominant currents, being heavier at weaning, and encountering favorable environmental conditions are important factors that improve first-year survival rates.
+Juvenile survival is a key determinant of population trajectory, particularly in K-selected species like southern elephant seals, which have long lifespans and few offspring with high parental investment. Our study investigated the foraging movement of naïve, newly weaned elephant seal pups in relation to ocean currents, environmental variables, and their subsequent survival. We found that travelling with the flow of predominant currents, being heavier at weaning, and encountering favorable environmental conditions are important factors that improve first-year survival rates.
 
 Dispersal direction and survival of weaned pups
 
