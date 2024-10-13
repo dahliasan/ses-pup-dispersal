@@ -20,7 +20,7 @@ library(broom)
 library(DHARMa)
 
 # Do binomial GLM for survival
-modal_data <- weaner_locs_sf %>%
+model_data <- weaner_locs_sf %>%
     select(id, seal_mean_bearing, is_following, weanmass, birthyear, size, survive_trip_1, survive_year_1) %>%
     st_drop_geometry() %>%
     distinct()
@@ -33,16 +33,16 @@ predictor_data <- all_data_weaners %>%
     group_by(id) %>%
     summarise(across(all_of(predictor_vars), ~ mean(., na.rm = TRUE)))
 
-modal_data <- modal_data %>% left_join(predictor_data, by = "id")
+model_data <- model_data %>% left_join(predictor_data, by = "id")
 
 cat("\n\nModal data summary:\n")
-print(modal_data %>% summary())
+print(model_data %>% summary())
 
 source("code/11b_3.1_get_high_cor_vars.R")
 # highly correlated variables: "tri" "dist_to_ice_m" "chl"
 
 model_trip <- glm(survive_trip_1 ~ is_following * weanmass + birthyear + sst + ssha + eke + slope + SSTgrad + ice + chlgrad,
-    data = modal_data, family = binomial(link = "logit"), na.action = "na.fail"
+    data = model_data, family = binomial(link = "logit"), na.action = "na.fail"
 )
 
 cat("\n\n--- Summary of model_trip (global model) ---\n")
@@ -93,7 +93,7 @@ print(importance)
 
 ## Year survival
 model_year <- glm(survive_year_1 ~ is_following * weanmass + birthyear + sst + ssha + eke + slope + SSTgrad + ice + chlgrad,
-    data = modal_data, family = binomial(link = "logit"), na.action = "na.fail"
+    data = model_data, family = binomial(link = "logit"), na.action = "na.fail"
 )
 
 cat("\n\n--- Summary of model_year (global model) ---\n")

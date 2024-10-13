@@ -1,5 +1,5 @@
 # Calculate correlation matrix
-cor_matrix <- cor(modal_data[, predictor_vars], use = "pairwise.complete.obs")
+cor_matrix <- cor(model_data[, predictor_vars], use = "pairwise.complete.obs")
 
 # Visualize correlation matrix
 png(paste0(output_path, "/correlation_matrix.png"), width = 800, height = 800)
