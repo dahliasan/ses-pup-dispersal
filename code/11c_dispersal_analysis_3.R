@@ -9,7 +9,7 @@ library(patchwork)
 
 
 # Define output folder
-output_folder <- "output/11b_4_plot_bearings"
+output_folder <- "output/dispersal_analysis_3"
 
 # Create the output folder if it doesn't exist
 dir.create(output_folder, showWarnings = FALSE, recursive = TRUE)
@@ -408,12 +408,12 @@ ggsave(paste0(output_folder, "/angle_diff_tile_plot.png"), width = 10, height = 
 
 library(patchwork)
 
-plot_cummean_bearings <- function(data) {
+plot_cummean_bearings <- function(data, ncol = 4) {
     data %>%
         ggplot() +
-        geom_point(aes(x = cummean_bearing.x, y = days_since_start, color = "Pups"), size = 0.1, alpha = 0.25) +
-        geom_point(aes(x = cummean_bearing.y, y = days_since_start, color = "Particle"), size = 0.1, alpha = 0.25) +
-        facet_wrap(~id, scales = "free", ncol = 4) +
+        geom_point(aes(x = cummean_bearing.x, y = days_since_start, color = "Pups"), size = 0.1, alpha = .5) +
+        geom_point(aes(x = cummean_bearing.y, y = days_since_start, color = "Particle"), size = 0.1, alpha = .5) +
+        facet_wrap(~id, scales = "free", ncol = ncol) +
         coord_polar() +
         scale_x_continuous(limits = c(0, 360)) +
         scale_color_manual(values = c("Pups" = "#D55E00", "Particle" = "#0072B2")) +
@@ -422,26 +422,19 @@ plot_cummean_bearings <- function(data) {
         labs(x = NULL, y = "Days since start", color = "Group")
 }
 
-p1 <- w_pt %>%
-    filter(is_following) %>%
-    plot_cummean_bearings()
+f <- w_pt %>%
+    filter(is_following) 
 
-w_pt %>%
-    filter(is_following) %>%
-    distinct(id) %>%
-    nrow() -> n1
+nf <- w_pt %>%
+    filter(!is_following)
 
+p1 <- f %>%
+    plot_cummean_bearings(ncol = 6)
 
-p2 <- w_pt %>%
-    filter(!is_following) %>%
-    plot_cummean_bearings()
+p2 <- nf %>%
+    plot_cummean_bearings(ncol = 3)
 
-w_pt %>%
-    filter(!is_following) %>%
-    distinct(id) %>%
-    nrow() -> n2
-
-p1 + p2 + plot_layout(ncol = 2, guides = "collect", widths = c(n1, n2)) + plot_annotation(tag_levels = "a") &
+p1 + p2 + plot_layout(ncol = 2, guides = "collect", widths = c(n_f, n_nf)) + plot_annotation(tag_levels = "a") &
     theme(legend.position = "bottom")
 
 ggsave(paste0(output_folder, "/cummean_bearings_plot.png"), width = 16, height = 10, dpi = 300)
@@ -689,8 +682,6 @@ cat("\n\n--- Variable importance for year survival ---\n")
 print(importance_year)
 
 # Generate general summary table
-
-
 cat("\n\n--- Summary table for all weaners ---\n")
 
 all_data_weaners %>%
@@ -830,3 +821,4 @@ sink()
 cat("\n\nModel analysis results have been saved to 'model_outputs.md'\n")
 
 cat("Analysis complete. Output saved to:", output_folder, "\n")
+
