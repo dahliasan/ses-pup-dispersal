@@ -1,9 +1,12 @@
+options(width = 10000)
+
 library(tidyverse)
 library(circular)
 library(sf)
 library(move)
 library(conflicted)
 library(patchwork)
+
 
 # Define output folder
 output_folder <- "output/11b_4_plot_bearings"
@@ -146,6 +149,11 @@ locf <- readRDS(female_data_path) %>%
 
 sink(file.path(output_folder, "console_output.txt"))
 
+cat("Number of unique ids in locf:", locf$id %>% unique() %>% length(), "\n")
+cat("Number of unique ids in locw:", locw$id %>% unique() %>% length(), "\n")
+cat("Number of unique ids in locps:", locps$id %>% unique() %>% length(), "\n")
+
+
 ## Plot all tracks
 all_tracks_plot <- ggplot() +
     geom_sf(data = locf, aes(color = "Female"), alpha = 0.5, size = .2) +
@@ -156,12 +164,12 @@ all_tracks_plot <- ggplot() +
 # ggsave(file.path(output_folder, "all_tracks_plot.png"), all_tracks_plot, width = 10, height = 8)
 
 ## Create circular plot of all bearings for each data set
-plot_bearing_histogram <- function(data, title = "") {
+plot_bearing_histogram <- function(data, title = NULL) {
     # Calculate mean bearing
     # mean_bearing <- mean.circular(data$bearing, na.rm = TRUE)
     mean_bearing <- data$bearing %>% median.circular(na.rm = TRUE)
 
-    data %>%
+    p <- data %>%
         ggplot(aes(x = bearing)) +
         geom_histogram(binwidth = 10, boundary = 0) +
         coord_polar(start = 0, direction = 1) +
@@ -171,7 +179,7 @@ plot_bearing_histogram <- function(data, title = "") {
             labels = c("N", "", "E", "", "S", "", "W", "", "N")
         ) +
         theme_bw() +
-        labs(x = NULL, y = "Count", title = title) +
+        labs(x = NULL, y = "Count") +
         theme(
             axis.text.y = element_blank(),
             axis.ticks.y = element_blank()
@@ -186,6 +194,14 @@ plot_bearing_histogram <- function(data, title = "") {
             x = mean_bearing, y = Inf, label = sprintf("%.1f°", as.numeric(mean_bearing)),
             color = "red", vjust = 1.1, hjust = -0.1
         )
+
+    if (!is.null(title)) {
+        p <- p + labs(title = title)
+    } else {
+        p <- p + theme(plot.title = element_blank())
+    }
+
+    return(p)
 }
 
 # All sequential outbound bearings
@@ -211,13 +227,15 @@ locps_by_id <- locps %>% process_by_id()
 locf_by_id <- locf %>% process_by_id()
 
 p_list <- list(locw_by_id, locps_by_id, locf_by_id)
-p_names <- c("Weaner", "Particle 0m", "Female")
+p_names <- c("Weaner", "Particle", "Female")
 
 # Map of mean bearings by id
 mean_bearings_plot <- map2(p_list, p_names, plot_bearing_histogram) %>%
-    wrap_plots(ncol = 2)
+    wrap_plots(ncol = 2, guides = "collect")
 
-# ggsave(file.path(output_folder, "mean_bearings_plot.png"), mean_bearings_plot, width = 12, height = 10)
+mean_bearings_plot
+
+ggsave(file.path(output_folder, "mean_bearings_plot.png"), mean_bearings_plot, width = 12, height = 10)
 
 
 ## Plot just particle traces
@@ -226,7 +244,7 @@ particle_traces_plot <- ggplot() +
     geom_sf(data = locp, aes(color = "Particle 200m"), alpha = 0.5) +
     theme_bw()
 
-# ggsave(file.path(output_folder, "particle_traces_plot.png"), particle_traces_plot, width = 10, height = 8)
+ggsave(file.path(output_folder, "particle_traces_plot.png"), particle_traces_plot, width = 10, height = 8)
 
 ## Function to compare bearings between two groups
 compare_bearings <- function(data1, data2, group1_name, group2_name, bearing_varname) {
@@ -249,40 +267,42 @@ compare_bearings <- function(data1, data2, group1_name, group2_name, bearing_var
     cat("\nWatson-Williams test results:\n")
     print(watson_test)
 
-    # Visualize the difference
+    cb_palette <- c("#D55E00", "#0072B2")
+
     ggplot() +
-        geom_histogram(data = data1, aes(x = bearing, fill = group1_name), alpha = 0.5, binwidth = 10, boundary = 0) +
-        geom_histogram(data = data2, aes(x = bearing, fill = group2_name), alpha = 0.5, binwidth = 10, boundary = 0) +
+        geom_histogram(data = data1, aes(x = bearing, fill = group1_name), alpha = 1, binwidth = 10, boundary = 0) +
+        geom_histogram(data = data2, aes(x = bearing, fill = group2_name), alpha = 0.6, binwidth = 10, boundary = 0) +
         coord_polar(start = 0, direction = 1) +
         scale_x_continuous(
             breaks = seq(0, 360, by = 45),
             limits = c(0, 360),
             labels = c("N", "", "E", "", "S", "", "W", "", "N")
         ) +
-        scale_fill_manual(values = c(setNames(c("blue", "red"), c(group1_name, group2_name)))) +
+        scale_fill_manual(values = setNames(cb_palette, c(group1_name, group2_name))) +
         theme_bw() +
-        labs(x = NULL, y = "Count", fill = "Bearings", title = paste("Comparison of", group1_name, "and", group2_name, "Bearings")) +
+        labs(x = NULL, y = "Count", fill = "Bearings") +
         theme(
-            axis.text.y = element_blank(),
-            axis.ticks.y = element_blank()
+            panel.grid.major = element_line(color = "gray90"),
+            panel.grid.minor = element_blank(),
+            legend.position = "bottom"
         ) +
         annotate("segment",
             x = mean_bearing_1, y = 0, xend = mean_bearing_1, yend = Inf,
-            arrow = arrow(length = unit(0.5, "cm")), color = "blue", linewidth = 1
+            arrow = arrow(length = unit(0.5, "cm")), color = cb_palette[1], linewidth = 1
         ) +
         annotate("segment",
             x = mean_bearing_2, y = 0, xend = mean_bearing_2, yend = Inf,
-            arrow = arrow(length = unit(0.5, "cm")), color = "red", linewidth = 1
+            arrow = arrow(length = unit(0.5, "cm")), color = cb_palette[2], linewidth = 1
         ) +
         annotate("text",
             x = mean_bearing_1, y = Inf,
             label = sprintf("%.1f°", as.numeric(mean_bearing_1)),
-            color = "blue", vjust = 1.1, hjust = -0.1
+            color = cb_palette[1], vjust = 1.1, hjust = -0.1
         ) +
         annotate("text",
             x = mean_bearing_2, y = Inf,
             label = sprintf("%.1f°", as.numeric(mean_bearing_2)),
-            color = "red", vjust = 1.1, hjust = -0.1
+            color = cb_palette[2], vjust = 1.1, hjust = -0.1
         )
 }
 
@@ -294,11 +314,19 @@ compare_bearings <- function(data1, data2, group1_name, group2_name, bearing_var
 # ggsave(file.path(output_folder, "weaner_particle_comparison.png"), weaner_particle_comparison, width = 10, height = 8)
 
 ## Compare summarised bearings
-summarised_weaner_female_comparison <- compare_bearings(locw_by_id, locf_by_id, "Weaner", "Female", "bearing")
-# ggsave(file.path(output_folder, "summarised_weaner_female_comparison.png"), summarised_weaner_female_comparison, width = 10, height = 8)
+summarised_weaner_female_comparison <- compare_bearings(locw_by_id, locf_by_id, "Pups", "Adult Females", "bearing")
 
-summarised_weaner_particle_comparison <- compare_bearings(locw_by_id, locps_by_id, "Weaner", "Particle 0m", "bearing")
-# ggsave(file.path(output_folder, "summarised_weaner_particle_comparison.png"), summarised_weaner_particle_comparison, width = 10, height = 8)
+summarised_weaner_female_comparison
+ggsave(file.path(output_folder, "summarised_weaner_female_comparison.png"), summarised_weaner_female_comparison, width = 10, height = 8)
+
+summarised_weaner_particle_comparison <- compare_bearings(locw_by_id, locps_by_id, "Pups", "Particle", "bearing")
+
+summarised_weaner_particle_comparison
+ggsave(file.path(output_folder, "summarised_weaner_particle_comparison.png"), summarised_weaner_particle_comparison, width = 10, height = 8)
+
+summarised_weaner_particle_comparison + summarised_weaner_female_comparison + plot_layout(ncol = 2) + plot_annotation(tag_levels = "a")
+
+ggsave(file.path(output_folder, "combined_mean_bearings_comparison.png"), width = 10, height = 6)
 
 
 # 3. Calculate mean angular difference
@@ -323,7 +351,7 @@ w_pt <- locw %>%
 
 ### Categorise seals as following current if they are within 45 deg of the mean trace direction
 locw_by_id <- locw_by_id %>%
-    left_join(locps_by_id %>% st_drop_geometry() %>% select(id, bearing), by = "id", suffix = c("_seal", "_trace")) %>%
+    left_join(locps_by_id %>% st_drop_geometry() %>% select(id, bearing, sd_bearing), by = "id", suffix = c("_seal", "_trace")) %>%
     mutate(
         angle_diff = angle_diff(bearing_seal, bearing_trace),
         is_following = angle_diff < 45
@@ -356,7 +384,6 @@ by_following %>%
 w_pt <- w_pt %>%
     left_join(locw_by_id %>% st_drop_geometry() %>% select(id, is_following), by = "id")
 
-ggsave(paste0(output_folder, "/angle_diff_plot.png"), width = 10, height = 8, dpi = 300)
 
 w_pt %>%
     ggplot(aes(x = days_since_start, y = angle_diff, color = is_following)) +
@@ -379,18 +406,45 @@ w_pt %>%
 
 ggsave(paste0(output_folder, "/angle_diff_tile_plot.png"), width = 10, height = 8, dpi = 300)
 
+library(patchwork)
+
+plot_cummean_bearings <- function(data) {
+    data %>%
+        ggplot() +
+        geom_point(aes(x = cummean_bearing.x, y = days_since_start, color = "Pups"), size = 0.1, alpha = 0.25) +
+        geom_point(aes(x = cummean_bearing.y, y = days_since_start, color = "Particle"), size = 0.1, alpha = 0.25) +
+        facet_wrap(~id, scales = "free", ncol = 4) +
+        coord_polar() +
+        scale_x_continuous(limits = c(0, 360)) +
+        scale_color_manual(values = c("Pups" = "#D55E00", "Particle" = "#0072B2")) +
+        theme_bw() +
+        theme(legend.position = "bottom", strip.text = element_text(size = 8)) +
+        labs(x = NULL, y = "Days since start", color = "Group")
+}
+
+p1 <- w_pt %>%
+    filter(is_following) %>%
+    plot_cummean_bearings()
 
 w_pt %>%
-    ggplot() +
-    geom_point(aes(x = cummean_bearing.x, y = days_since_start, color = "Weaner"), size = 0.1, alpha = 0.25) +
-    geom_point(aes(x = cummean_bearing.y, y = days_since_start, color = "Particle 0m"), size = 0.1, alpha = 0.25) +
-    facet_wrap(is_following ~ id, scales = "free") +
-    coord_polar() +
-    scale_x_continuous(limits = c(0, 360)) +
-    scale_color_manual(values = c("Weaner" = "red", "Particle 0m" = "#6ebeff")) +
-    theme_bw()
+    filter(is_following) %>%
+    distinct(id) %>%
+    nrow() -> n1
 
-ggsave(paste0(output_folder, "/cummean_bearings_plot.png"), width = 10, height = 8, dpi = 300)
+
+p2 <- w_pt %>%
+    filter(!is_following) %>%
+    plot_cummean_bearings()
+
+w_pt %>%
+    filter(!is_following) %>%
+    distinct(id) %>%
+    nrow() -> n2
+
+p1 + p2 + plot_layout(ncol = 2, guides = "collect", widths = c(n1, n2)) + plot_annotation(tag_levels = "a") &
+    theme(legend.position = "bottom")
+
+ggsave(paste0(output_folder, "/cummean_bearings_plot.png"), width = 16, height = 10, dpi = 300)
 
 w_pt %>%
     ggplot() +
@@ -644,7 +698,7 @@ all_data_weaners %>%
     left_join(get_survival_data()) %>%
     group_by(id, tripdur, last_seen_year, birthdate, blackmass, weanmass, survive_trip_1, survive_year_1) %>%
     summarise(
-        max_distance = max(dist2col, na.rm = TRUE)
+        max_distance = max(dist2col, na.rm = TRUE) %>% round(0)
     ) %>%
     left_join(
         locw_by_id %>%
@@ -654,6 +708,27 @@ all_data_weaners %>%
     ungroup() %>%
     mutate(across(all_of(c("survive_trip_1", "survive_year_1", "is_following")), ~ ifelse(. == TRUE, "yes", "no"))) %>%
     mutate(across(where(is.numeric), ~ round(., 1))) %>%
+    mutate(across(any_of(c("tripdur", "max_distance")), ~ round(., 0))) %>%
+    mutate(
+        bearing_trace = paste0(bearing_trace, " ± ", sd_bearing_trace),
+        bearing_seal = paste0(bearing_seal, " ± ", sd_bearing_seal)
+    ) %>%
+    select(-c(sd_bearing_trace, sd_bearing_seal)) %>%
+    rename(
+        "Trip duration (days)" = tripdur,
+        "Last seen (year)" = last_seen_year,
+        "Weaning mass (kg)" = weanmass,
+        "Birthdate" = birthdate,
+        "Black mass (kg)" = blackmass,
+        "Survived trip 1" = survive_trip_1,
+        "Survived year 1" = survive_year_1,
+        "Max distance to colony (km)" = max_distance,
+        "ID" = id,
+        "Seal bearing (°)" = bearing_seal,
+        "PT bearing (°)" = bearing_trace,
+        "Followed PT" = is_following,
+        "Δ bearing (°)" = angle_diff
+    ) %>%
     as.data.frame() %>%
     print() %>%
     write_csv(paste0(output_folder, "/summary_table_weaners.csv"))
@@ -663,5 +738,95 @@ all_data_weaners %>%
 cat("\n\n--- Analysis complete. Output saved. ---\n")
 
 sink()
+
+# Create a new sink for model outputs in Markdown format
+sink(file.path(output_folder, "model_outputs.md"))
+
+cat("# Model Analysis Results\n\n")
+
+# First Trip Survival Model
+cat("## 1. First Trip Survival Model\n\n")
+
+cat("### 1.1 Global Model Summary\n")
+cat("This summary shows the coefficients, standard errors, z-values, and p-values for all variables in the full model.\n\n")
+cat("```\n")
+print(summary(model_trip))
+cat("```\n\n")
+
+cat("### 1.2 DHARMa Model Diagnostics\n")
+cat("These diagnostics check the model's assumptions and fit. The plots show residual patterns, while the tests check for specific issues.\n\n")
+cat("```\n")
+cat("#### Dispersion test (checks if the model is over- or under-dispersed)\n")
+print(testDispersion(dharma_trip))
+cat("\n#### Zero-inflation test (checks if there are more zeros than expected)\n")
+print(testZeroInflation(dharma_trip))
+cat("\n#### Outliers test (identifies potential outliers)\n")
+print(testOutliers(dharma_trip))
+cat("```\n\n")
+
+cat("### 1.3 Model Selection Summary\n")
+cat("This table shows the top models based on AICc. Lower AICc values indicate better model fit, considering both goodness of fit and model complexity.\n\n")
+cat("```\n")
+print(model_summary %>%
+    mutate(across(where(is.numeric), ~ signif(., 3))) %>%
+    as.data.frame())
+cat("```\n\n")
+
+cat("### 1.4 Model Averaging Summary\n")
+cat("This summary shows the averaged coefficients across the top models, accounting for model uncertainty.\n\n")
+cat("```\n")
+print(summary(avg_model))
+cat("```\n\n")
+
+cat("### 1.5 Variable Importance\n")
+cat("These values indicate the relative importance of each variable across all considered models. Higher values suggest greater importance.\n\n")
+cat("```\n")
+print(importance)
+cat("```\n\n")
+
+# First Year Survival Model
+cat("## 2. First Year Survival Model\n\n")
+
+cat("### 2.1 Global Model Summary\n")
+cat("This summary shows the coefficients, standard errors, z-values, and p-values for all variables in the full model for first-year survival.\n\n")
+cat("```\n")
+print(summary(model_year))
+cat("```\n\n")
+
+cat("### 2.2 DHARMa Model Diagnostics\n")
+cat("These diagnostics check the model's assumptions and fit for the first-year survival model.\n\n")
+cat("```\n")
+cat("#### Dispersion test\n")
+print(testDispersion(dharma_year))
+cat("\n#### Zero-inflation test\n")
+print(testZeroInflation(dharma_year))
+cat("\n#### Outliers test\n")
+print(testOutliers(dharma_year))
+cat("```\n\n")
+
+cat("### 2.3 Model Selection Summary\n")
+cat("This table shows the top models for first-year survival based on AICc.\n\n")
+cat("```\n")
+print(model_summary_year %>%
+    mutate(across(where(is.numeric), ~ signif(., 3))) %>%
+    as.data.frame())
+cat("```\n\n")
+
+cat("### 2.4 Model Averaging Summary\n")
+cat("This summary shows the averaged coefficients across the top models for first-year survival.\n\n")
+cat("```\n")
+print(summary(avg_model_year))
+cat("```\n\n")
+
+cat("### 2.5 Variable Importance\n")
+cat("These values indicate the relative importance of each variable across all considered models for first-year survival.\n\n")
+cat("```\n")
+print(importance_year)
+cat("```\n\n")
+
+# Close the model outputs sink
+sink()
+
+cat("\n\nModel analysis results have been saved to 'model_outputs.md'\n")
 
 cat("Analysis complete. Output saved to:", output_folder, "\n")
