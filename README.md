@@ -1,4 +1,4 @@
-# Elephant-Weaners
+# Dispersal of weaned southern elephant seal pups
 
 ## Folders 
 - Data - Raw data only. 
