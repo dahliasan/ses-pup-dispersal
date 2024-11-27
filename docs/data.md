@@ -55,17 +55,4 @@ The following datasets are available through Dryad: [DOI: pending]
 - Quality control flags indicate suspicious tracks
 - All coordinates in decimal degrees (WGS84)
 - Seal IDs standardized across datasets for consistent referencing
-
-## Citation
-If you use this data, please cite:
-```bibtex
-@article{foo2024seal,
-  title={},
-  author={Foo, Dahlia},
-  journal={},
-  year={2024}
-}
-```
-
-## Contact
-For questions about the data, please contact [your contact information or institutional email] 
+ 
