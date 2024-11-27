@@ -1,6 +1,12 @@
 project:
   type: website
-  output-dir: docs      # Output to docs folder for GitHub Pages
+  output-dir: docs
+  render:
+    - index.qmd
+    - code/dispersal-analysis.qmd
+    - code/export-data.qmd
+    - code/functions.qmd
+    - data.qmd
 
 website:
   title: "Southern Elephant Seal Pup Dispersal Analysis"
