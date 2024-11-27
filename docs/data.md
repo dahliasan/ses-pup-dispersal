@@ -9,7 +9,7 @@ layout: default
 The following datasets are available through Dryad: [DOI: pending]
 
 ### Tracking Data
-1. **Juvenile Seal Tracks** (`tracks_processed_12h.rds`)
+1. **Juvenile Seal Tracks** (`tracks_processed_12h.csv`)
    - 49 individual seals
    - 14,162 locations
    - 12-hour intervals
@@ -43,11 +43,18 @@ The following datasets are available through Dryad: [DOI: pending]
    - Number of records
    - Dataset descriptions
 
+6. **Seal Identification Data** (`seal_id.csv`)
+   - 98 unique seal identifiers
+   - Variables: ref, ptt, brand, tag1, tag2, SEAL_ID
+   - Includes data from multiple years (1995-2000)
+   - Links PTT numbers to unique SEAL_ID for cross-referencing
+
 ## Data Processing
 - All seal tracks processed using `foieGras` R package
 - Particle traces generated using `currently` R package
 - Quality control flags indicate suspicious tracks
 - All coordinates in decimal degrees (WGS84)
+- Seal IDs standardized across datasets for consistent referencing
 
 ## Citation
 If you use this data, please cite:
