@@ -8,7 +8,8 @@
 
 # Folders
 _archive
-Output
+Output/
+output/
 Data/AccessDB
 Data/Environmental
 
