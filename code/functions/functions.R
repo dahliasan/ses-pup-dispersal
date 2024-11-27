@@ -1,15 +1,17 @@
 require(tidyverse)
 require(lubridate)
 require(conflicted)
+require(here)
+
 
 conflicts_prefer(dplyr::summarise, dplyr::filter, dplyr::lag, purrr::map, dplyr::select, .quiet = TRUE)
 
-source("code/functions/bearing_utils.R")
-source("code/functions/convert2polarsf.R")
-source("code/functions/preprocess_seal_particle_data.R")
-source("code/functions/print_and_save_results.R")
-source("code/functions/unwrap_lon.R")
-load("baseInfo.Rdata")
+source(here("code", "functions", "bearing_utils.R"))
+source(here("code", "functions", "convert2polarsf.R"))
+source(here("code", "functions", "preprocess_seal_particle_data.R"))
+source(here("code", "functions", "print_and_save_results.R"))
+source(here("code", "functions", "unwrap_lon.R"))
+load(here("baseInfo.Rdata"))
 
 
 # Custom Functions ---------------------------------------------------------
@@ -51,7 +53,7 @@ saveDepartureDateResult <- function(results_table, dates, age_group) {
 # create function to determine survival
 get_survival_data <- function() {
   require(tidyverse)
-  all_data_weaners <- readRDS("./Output/all_data_combined.rds")
+  all_data_weaners <- readRDS(here("output", "all_data_combined.rds"))
   all_data_weaners %>%
     filter(sim == 0, trip == 1) %>%
     group_by(id) %>%
@@ -75,6 +77,6 @@ get_survival_data <- function() {
 }
 
 load_all_data_weaners <- function() {
-  all_data_weaners <- readRDS("./Output/all_data_combined.rds")
+  all_data_weaners <- readRDS(here("output", "all_data_combined.rds"))
   return(all_data_weaners)
 }
