@@ -1,0 +1,11 @@
+title: "Southern Elephant Seal Pup Dispersal Analysis"
+description: "Code documentation for tracking analysis"
+author: "Dahlia Foo"
+
+# Use Quarto for processing
+format:
+  html:
+    theme: cosmo
+    code-fold: show
+    code-tools: true
+    toc: true
