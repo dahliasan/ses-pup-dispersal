@@ -14,7 +14,7 @@ Data/AccessDB
 Data/Environmental
 
 
-# all images 
+# all images
 *.png
 *.jpg
 *.jpeg
@@ -36,3 +36,5 @@ Data/mq-ellie-weaners-haulout.RData
 .vscode/launch.json
 .vscode/settings.json
 /paths
+
+/.quarto/
