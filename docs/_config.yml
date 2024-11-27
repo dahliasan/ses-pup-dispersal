@@ -1,4 +1,4 @@
-remote_theme: : olivier3lanc/Jekyll-LibDoc
+remote_theme: olivier3lanc/Jekyll-LibDoc
 plugins:
 - jekyll-remote-theme
 
