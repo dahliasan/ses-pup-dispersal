@@ -23,6 +23,7 @@ files <- list(
 load(here("output", "seal_id.rdata"))
 ls()
 sealID_all %>% print(n = 100)
+write_csv(sealID_all, here("output", "seal_id.csv"))
 
 ```
 
@@ -144,5 +145,3 @@ metadata_summary <- bind_rows(
 write_csv(metadata_summary, here("output", "dataset_metadata_summary.csv"))
 #
 ```
-
-
