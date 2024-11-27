@@ -116,7 +116,7 @@
     "href": "index.html",
     "title": "Data Access",
     "section": "",
-    "text": "The following datasets are available through Dryad: [DOI: pending]\n\n\n\nJuvenile Seal Tracks (tracks_processed_12h.csv)\n\n49 individual seals\n14,162 locations\n12-hour intervals\nARGOS locations processed using state-space models\nVariables: id, date, lon, lat, flag\n\nAdult Female Tracks (adult_female_locs.csv)\n\n67 individual females\n101,905 locations\n6-hour intervals\nARGOS and GLS locations\nVariables: id, date, lon, lat, type, month, season\n\n\n\n\n\n\nDeep Particle Traces (particle-trace-186.13m.csv)\n\n48 particle trajectories\n5,603 locations\nDepth: 186.13m\nVariables: id, date, lon, lat\n\nSurface Particle Traces (currently_particleTrace.csv)\n\n48 particle trajectories\n11,164 locations\nDepth: surface\nVariables: id, date, lon, lat\n\n\n\n\n\n\nDataset Summary (dataset_metadata_summary.csv)\n\nSummary statistics for each dataset\nTemporal coverage\nNumber of records\nDataset descriptions\n\nSeal Identification Data (seal_id.csv)\n\n98 unique seal identifiers\nVariables: ref, ptt, brand, tag1, tag2, SEAL_ID\nIncludes data from multiple years (1995-2000)\nLinks PTT numbers to unique SEAL_ID for cross-referencing\n\n\n\n\n\n\n\nAll seal tracks processed using foieGras R package\nParticle traces generated using currently R package\nQuality control flags indicate suspicious tracks\nAll coordinates in decimal degrees (WGS84)\nSeal IDs standardized across datasets for consistent referencing"
+    "text": "The following datasets are available through Dryad: [DOI: pending]\n\n\n\nJuvenile Seal Tracks (tracks_processed_12h.csv)\n\n49 individual seals\n14,162 locations\n12-hour intervals\nARGOS locations processed using state-space models\nVariables: id, date, lon, lat, flag\n\nAdult Female Tracks (adult_female_locs.csv)\n\n67 individual females\n101,905 locations\n6-hour intervals\nARGOS and GLS locations\nVariables: id, date, lon, lat, type, month, season\n\n\n\n\n\n\nDeep Particle Traces (particle-trace-186.13m.csv)\n\n48 particle trajectories\n5,603 locations\nDepth: 186.13m\nVariables: id, date, lon, lat\n\nSurface Particle Traces (currently_particleTrace.csv)\n\n48 particle trajectories\n11,164 locations\nDepth: surface\nVariables: id, date, lon, lat\n\n\n\n\n\n\nDataset Summary (dataset_metadata_summary.csv)\n\nSummary statistics for each dataset\nTemporal coverage\nNumber of records\nDataset descriptions\n\nSeal Identification Data (seal_id.csv)\n\n98 unique seal identifiers\nVariables: ref, ptt, brand, tag1, tag2, SEAL_ID\nIncludes data from multiple years (1995-2000)\nLinks PTT numbers to unique SEAL_ID for cross-referencing"
   },
   {
     "objectID": "index.html#complete-datasets",
@@ -129,8 +129,8 @@
     "objectID": "index.html#data-processing",
     "href": "index.html#data-processing",
     "title": "Data Access",
-    "section": "",
-    "text": "All seal tracks processed using foieGras R package\nParticle traces generated using currently R package\nQuality control flags indicate suspicious tracks\nAll coordinates in decimal degrees (WGS84)\nSeal IDs standardized across datasets for consistent referencing"
+    "section": "Data Processing",
+    "text": "Data Processing\n\nAll seal tracks processed using foieGras R package\nParticle traces generated using currently R package\nQuality control flags indicate suspicious tracks\nAll coordinates in decimal degrees (WGS84)\nSeal IDs standardized across datasets for consistent referencing"
   },
   {
     "objectID": "code/export-data.html",

@@ -6,8 +6,6 @@ format:
     code-fold: true
 ---
 
-# Data Access
-
 ## Complete Datasets
 The following datasets are available through Dryad: [DOI: pending]
 
