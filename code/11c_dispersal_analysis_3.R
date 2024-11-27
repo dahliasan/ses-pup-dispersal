@@ -1,165 +1,173 @@
-options(width = 10000)
+{
+    options(width = 10000)
 
-library(tidyverse)
-library(circular)
-library(sf)
-library(move)
-library(conflicted)
-library(patchwork)
+    library(tidyverse)
+    library(circular)
+    library(sf)
+    library(move)
+    library(conflicted)
+    library(patchwork)
+    library(skimr)
+    library(gtsummary)
+    library(gt)
+    library(gtExtras)
+    library(summarytools)
+
+    # Define output folder
+    output_folder <- "output/dispersal_analysis_3"
+
+    # Create the output folder if it doesn't exist
+    dir.create(output_folder, showWarnings = FALSE, recursive = TRUE)
+
+    # Start redirecting console output to a file
 
 
-# Define output folder
-output_folder <- "output/dispersal_analysis_3"
+    conflicts_prefer(dplyr::filter, dplyr::select, dplyr::mutate, dplyr::group_by)
 
-# Create the output folder if it doesn't exist
-dir.create(output_folder, showWarnings = FALSE, recursive = TRUE)
+    seal_data_path <- "./Output/tracks_processed_12h.rds"
+    female_data_path <- "data/adult_female_locs.rds"
+    particle_data_path <- "./Output/particle-trace-186.13m.rds"
+    surface_particle_data_path <- "./Output/currently_particleTrace.rds"
 
-# Start redirecting console output to a file
+    source("code/functions/functions.R")
 
+    colony <- cbind(158.95, -54.5)
 
-conflicts_prefer(dplyr::filter, dplyr::select, dplyr::mutate, dplyr::group_by)
-
-seal_data_path <- "./Output/tracks_processed_12h.rds"
-female_data_path <- "data/adult_female_locs.rds"
-particle_data_path <- "./Output/particle-trace-186.13m.rds"
-surface_particle_data_path <- "./Output/currently_particleTrace.rds"
-
-source("code/functions/functions.R")
-
-colony <- cbind(158.95, -54.5)
-
-calculate_distance_from_start <- function(data, colony = cbind(158.95, -54.5)) {
-    data %>%
-        group_by(id) %>%
-        mutate(
-            distance_from_start = geosphere::distGeo(
-                cbind(colony[1], colony[2]),
-                cbind(lon, lat)
+    calculate_distance_from_start <- function(data, colony = cbind(158.95, -54.5)) {
+        data %>%
+            group_by(id) %>%
+            mutate(
+                distance_from_start = geosphere::distGeo(
+                    cbind(colony[1], colony[2]),
+                    cbind(lon, lat)
+                )
             )
-        )
+    }
+
+    identify_outbound_trip <- function(data) {
+        data %>%
+            calculate_distance_from_start() %>%
+            group_by(id) %>%
+            arrange(id, date) %>%
+            mutate(
+                max_distance = max(distance_from_start),
+                is_outbound = distance_from_start <= max_distance & row_number() <= which.max(distance_from_start)
+            ) %>%
+            ungroup()
+    }
+
+    normalize_longitude <- function(lon) {
+        ((lon + 180) %% 360) - 180
+    }
+
+    interpolate_track <- function(data) {
+        data <- data %>% as.data.frame()
+
+        # Print the number of rows before processing
+        cat("Total rows before processing:", nrow(data), "\n")
+
+        processed_data <- data %>%
+            group_split(id) %>%
+            map_dfr(~ {
+                id <- .$id %>% unique()
+                cat("Processing ID:", id, "\n")
+                cat("Rows for this ID before processing:", nrow(.), "\n")
+
+                # Create move object
+                move_obj <- move(
+                    x = .$lon,
+                    y = .$lat,
+                    time = .$date,
+                    proj = CRS("+proj=longlat +datum=WGS84"),
+                    data = .,
+                )
+
+                # Only interpolate if there are gaps larger than 1 day
+                time_diffs <- difftime(.$date, lag(.$date), units = "days") %>% as.numeric()
+                print(time_diffs %>% unique())
+                if (all(time_diffs %>% na.omit() != 1)) {
+                    cat("Time diffs not 1 day. Interpolating...\n")
+                    interpolated <- interpolateTime(move_obj, time = as.difftime(24, units = "hours"), spaceMethod = "greatcircle")
+                } else {
+                    cat("Time diffs are 1 day. Skipping interpolation.\n")
+                    interpolated <- move_obj
+                }
+
+                result <- interpolated %>%
+                    as_tibble() %>%
+                    mutate(id = id, date = as.Date(date)) %>%
+                    dplyr::select(-lon, -lat) %>%
+                    rename(lon = coords.x1, lat = coords.x2) %>%
+                    dplyr::select(id, date, lon, lat, everything())
+
+                cat("Rows for this ID after processing:", nrow(result), "\n\n")
+                result
+            })
+
+        # Print the number of rows after processing
+        cat("Total rows after processing:", nrow(processed_data), "\n")
+
+        return(processed_data)
+    }
+
+    preprocess_track <- function(data) {
+        data %>%
+            mutate(lon = normalize_longitude(lon)) %>%
+            # drop_na(lon, lat) %>%
+            arrange(id, date) %>%
+            group_by(id) %>%
+            interpolate_track() %>%
+            calculate_bearings() %>%
+            mutate(bearing = make_circular(bearing)) %>%
+            identify_outbound_trip()
+    }
+
+    # Calculate days since start for each id
+    calculate_days_since_start <- function(data) {
+        data %>%
+            group_by(id) %>%
+            arrange(id, date) %>%
+            mutate(days_since_start = as.numeric(difftime(date, first(date), units = "days"))) %>%
+            ungroup()
+    }
+
+    # Read and preprocess data
+    locw <- readRDS(seal_data_path) %>%
+        filter(trip == 1, SUS == FALSE) %>%
+        dplyr::select(-daysFromDeployment, -SUS, -trip, -dist2col, -haulout) %>%
+        preprocess_track() %>%
+        convert2polarsf(remove_coords = FALSE) %>%
+        filter(is_outbound)
+
+    locf <- readRDS(female_data_path) %>%
+        preprocess_track() %>%
+        convert2polarsf(remove_coords = FALSE) %>%
+        filter(is_outbound)
+
+    locp <- readRDS(particle_data_path) %>%
+        preprocess_track() %>%
+        convert2polarsf(remove_coords = FALSE)
+
+    locps <- readRDS(surface_particle_data_path) %>%
+        preprocess_track() %>%
+        convert2polarsf(remove_coords = FALSE)
+
+    # sink(file.path(output_folder, "console_output_2.txt"))
+
+    cat("Number of unique ids in locf:", locf$id %>% unique() %>% length(), "\n")
+    cat("Number of unique ids in locw:", locw$id %>% unique() %>% length(), "\n")
+    cat("Number of unique ids in locps:", locps$id %>% unique() %>% length(), "\n")
+    cat("Number of unique ids in locp:", locp$id %>% unique() %>% length(), "\n")
 }
-
-identify_outbound_trip <- function(data) {
-    data %>%
-        calculate_distance_from_start() %>%
-        group_by(id) %>%
-        arrange(id, date) %>%
-        mutate(
-            max_distance = max(distance_from_start),
-            is_outbound = distance_from_start <= max_distance & row_number() <= which.max(distance_from_start)
-        ) %>%
-        ungroup()
-}
-
-normalize_longitude <- function(lon) {
-    ((lon + 180) %% 360) - 180
-}
-
-interpolate_track <- function(data) {
-    data <- data %>% as.data.frame()
-
-    # Print the number of rows before processing
-    cat("Total rows before processing:", nrow(data), "\n")
-
-    processed_data <- data %>%
-        group_split(id) %>%
-        map_dfr(~ {
-            id <- .$id %>% unique()
-            cat("Processing ID:", id, "\n")
-            cat("Rows for this ID before processing:", nrow(.), "\n")
-
-            # Create move object
-            move_obj <- move(
-                x = .$lon,
-                y = .$lat,
-                time = .$date,
-                proj = CRS("+proj=longlat +datum=WGS84"),
-                data = .,
-            )
-
-            # Only interpolate if there are gaps larger than 1 day
-            time_diffs <- difftime(.$date, lag(.$date), units = "days") %>% as.numeric()
-            print(time_diffs %>% unique())
-            if (all(time_diffs %>% na.omit() != 1)) {
-                cat("Time diffs not 1 day. Interpolating...\n")
-                interpolated <- interpolateTime(move_obj, time = as.difftime(24, units = "hours"), spaceMethod = "greatcircle")
-            } else {
-                cat("Time diffs are 1 day. Skipping interpolation.\n")
-                interpolated <- move_obj
-            }
-
-            result <- interpolated %>%
-                as_tibble() %>%
-                mutate(id = id, date = as.Date(date)) %>%
-                dplyr::select(-lon, -lat) %>%
-                rename(lon = coords.x1, lat = coords.x2) %>%
-                dplyr::select(id, date, lon, lat, everything())
-
-            cat("Rows for this ID after processing:", nrow(result), "\n\n")
-            result
-        })
-
-    # Print the number of rows after processing
-    cat("Total rows after processing:", nrow(processed_data), "\n")
-
-    return(processed_data)
-}
-
-preprocess_track <- function(data) {
-    data %>%
-        mutate(lon = normalize_longitude(lon)) %>%
-        # drop_na(lon, lat) %>%
-        arrange(id, date) %>%
-        group_by(id) %>%
-        interpolate_track() %>%
-        calculate_bearings() %>%
-        mutate(bearing = make_circular(bearing)) %>%
-        identify_outbound_trip()
-}
-
-# Calculate days since start for each id
-calculate_days_since_start <- function(data) {
-    data %>%
-        group_by(id) %>%
-        arrange(id, date) %>%
-        mutate(days_since_start = as.numeric(difftime(date, first(date), units = "days"))) %>%
-        ungroup()
-}
-
-# Read and preprocess data
-locw <- readRDS(seal_data_path) %>%
-    filter(trip == 1, SUS == FALSE) %>%
-    dplyr::select(-daysFromDeployment, -SUS, -trip, -dist2col, -haulout) %>%
-    preprocess_track() %>%
-    convert2polarsf(remove_coords = FALSE) %>%
-    filter(is_outbound)
-
-locp <- readRDS(particle_data_path) %>%
-    preprocess_track() %>%
-    convert2polarsf(remove_coords = FALSE)
-
-locps <- readRDS(surface_particle_data_path) %>%
-    preprocess_track() %>%
-    convert2polarsf(remove_coords = FALSE)
-
-locf <- readRDS(female_data_path) %>%
-    preprocess_track() %>%
-    convert2polarsf(remove_coords = FALSE) %>%
-    filter(is_outbound)
-
-sink(file.path(output_folder, "console_output.txt"))
-
-cat("Number of unique ids in locf:", locf$id %>% unique() %>% length(), "\n")
-cat("Number of unique ids in locw:", locw$id %>% unique() %>% length(), "\n")
-cat("Number of unique ids in locps:", locps$id %>% unique() %>% length(), "\n")
-
-
 ## Plot all tracks
 all_tracks_plot <- ggplot() +
-    geom_sf(data = locf, aes(color = "Female"), alpha = 0.5, size = .2) +
-    geom_sf(data = locw, aes(color = "Weaner"), alpha = 0.5, size = .2) +
-    geom_sf(data = locps, aes(color = "Particle 0m"), alpha = 0.5, size = .2) +
+    geom_sf(data = locf, aes(color = "Female"), alpha = 0.5, size = .5) +
+    geom_sf(data = locw, aes(color = "Weaner"), alpha = 0.5, size = .5) +
+    geom_sf(data = locps, aes(color = "Particle 0m"), alpha = 0.5, size = .5) +
+    geom_sf(data = locp, aes(color = "Particle 200m"), alpha = 0.5, size = .5) +
     theme_bw()
+
+all_tracks_plot
 
 # ggsave(file.path(output_folder, "all_tracks_plot.png"), all_tracks_plot, width = 10, height = 8)
 
@@ -205,29 +213,33 @@ plot_bearing_histogram <- function(data, title = NULL) {
 }
 
 # All sequential outbound bearings
-p_list <- list(locw, locps, locf)
-p_names <- c("Weaner", "Particle 0m", "Female")
+p_list <- list(locw, locps, locf, locp)
+p_names <- c("Weaner", "Particle 0m", "Female", "Particle 186m")
 
 # Map of all bearings for each data set
 all_bearings_plot <- map2(p_list, p_names, plot_bearing_histogram) %>%
     wrap_plots(ncol = 2)
 
+all_bearings_plot
+
 ggsave(file.path(output_folder, "all_bearings_plot.png"), all_bearings_plot, width = 12, height = 10)
 
-# Mean outbound bearings by id
-process_by_id <- function(data) {
-    data %>%
-        group_by(id) %>%
-        summarize(mean_bearing = mean.circular(bearing, na.rm = TRUE), sd_bearing = sd.circular(bearing, na.rm = TRUE)) %>%
-        rename(bearing = mean_bearing)
+{
+    # Mean outbound bearings by id
+    process_by_id <- function(data) {
+        data %>%
+            group_by(id) %>%
+            summarize(mean_bearing = mean.circular(bearing, na.rm = TRUE), sd_bearing = sd.circular(bearing, na.rm = TRUE)) %>%
+            rename(bearing = mean_bearing)
+    }
+
+    locw_by_id <- locw %>% process_by_id()
+    locps_by_id <- locps %>% process_by_id()
+    locf_by_id <- locf %>% process_by_id()
+    locp_by_id <- locp %>% process_by_id()
 }
-
-locw_by_id <- locw %>% process_by_id()
-locps_by_id <- locps %>% process_by_id()
-locf_by_id <- locf %>% process_by_id()
-
-p_list <- list(locw_by_id, locps_by_id, locf_by_id)
-p_names <- c("Weaner", "Particle", "Female")
+p_list <- list(locw_by_id, locps_by_id, locf_by_id, locp_by_id)
+p_names <- c("Weaner", "Particle 0m", "Female", "Particle 186m")
 
 # Map of mean bearings by id
 mean_bearings_plot <- map2(p_list, p_names, plot_bearing_histogram) %>%
@@ -306,56 +318,46 @@ compare_bearings <- function(data1, data2, group1_name, group2_name, bearing_var
         )
 }
 
-## Overall group comparisons
-# weaner_female_comparison <- compare_bearings(locw, locf, "Weaner", "Female", "bearing")
-# ggsave(file.path(output_folder, "weaner_female_comparison.png"), weaner_female_comparison, width = 10, height = 8)
+## Compare individual mean bearings
+p1 <- compare_bearings(locw_by_id, locf_by_id, "Pups", "Adult Females", "bearing")
 
-# weaner_particle_comparison <- compare_bearings(locw, locps, "Weaner", "Particle 0m", "bearing")
-# ggsave(file.path(output_folder, "weaner_particle_comparison.png"), weaner_particle_comparison, width = 10, height = 8)
+p1
 
-## Compare summarised bearings
-summarised_weaner_female_comparison <- compare_bearings(locw_by_id, locf_by_id, "Pups", "Adult Females", "bearing")
+p2 <- compare_bearings(locw_by_id, locps_by_id, "Pups", "Particle", "bearing")
 
-summarised_weaner_female_comparison
-ggsave(file.path(output_folder, "summarised_weaner_female_comparison.png"), summarised_weaner_female_comparison, width = 10, height = 8)
+p2
+ggsave(file.path(output_folder, "summarised_weaner_particle_comparison.png"), p2, width = 10, height = 8)
 
-summarised_weaner_particle_comparison <- compare_bearings(locw_by_id, locps_by_id, "Pups", "Particle", "bearing")
-
-summarised_weaner_particle_comparison
-ggsave(file.path(output_folder, "summarised_weaner_particle_comparison.png"), summarised_weaner_particle_comparison, width = 10, height = 8)
-
-summarised_weaner_particle_comparison + summarised_weaner_female_comparison + plot_layout(ncol = 2) + plot_annotation(tag_levels = "a")
+p1 + p2 + plot_layout(ncol = 2) + plot_annotation(tag_levels = "a")
 
 ggsave(file.path(output_folder, "combined_mean_bearings_comparison.png"), width = 10, height = 6)
 
+p3 <- compare_bearings(locw_by_id, locp_by_id, "Pups", "Particle 200m", "bearing")
 
-# 3. Calculate mean angular difference
-calculate_circular_cummean <- function(bearings) {
-    n <- length(bearings)
+p3
 
-    sapply(1:n, function(i) {
-        bearings_subset <- bearings[1:i]
-        mean_bearing <- mean.circular(bearings_subset)
-    })
+p1 + p2 + p3 + plot_layout(ncol = 3) + plot_annotation(tag_levels = "a")
+
+ggsave(file.path(output_folder, "combined_mean_bearings_comparison_2.png"), width = 12, height = 6)
+
+
+{
+    ### Categorise seals as following current if they are within 45 deg of the mean trace direction
+    locw_by_id <- locw_by_id %>%
+        left_join(locps_by_id %>% st_drop_geometry() %>% select(id, bearing, sd_bearing), by = "id", suffix = c("_seal", "_pt")) %>%
+        mutate(
+            angle_diff_seal_pt = angle_diff(bearing_seal, bearing_pt),
+            is_following = angle_diff_seal_pt < 45
+        )
+
+    # Add 200m particle data
+    locw_by_id <- locw_by_id %>%
+        left_join(locp_by_id %>% st_drop_geometry() %>% select(id, bearing, sd_bearing) %>% rename(bearing_pt200m = bearing, sd_bearing_pt200m = sd_bearing), by = "id") %>%
+        mutate(
+            angle_diff_seal_pt200m = angle_diff(bearing_seal, bearing_pt200m),
+            is_following_200m = angle_diff_seal_pt200m < 45
+        )
 }
-
-w_pt <- locw %>%
-    left_join(locps %>% st_drop_geometry() %>% select(id, date, bearing), by = c("id", "date")) %>%
-    group_by(id) %>%
-    mutate(
-        cummean_bearing.x = calculate_circular_cummean(bearing.x),
-        cummean_bearing.y = calculate_circular_cummean(bearing.y),
-        days_since_start = as.numeric(date - first(date)),
-        angle_diff = angle_diff(cummean_bearing.x, cummean_bearing.y),
-    )
-
-### Categorise seals as following current if they are within 45 deg of the mean trace direction
-locw_by_id <- locw_by_id %>%
-    left_join(locps_by_id %>% st_drop_geometry() %>% select(id, bearing, sd_bearing), by = "id", suffix = c("_seal", "_trace")) %>%
-    mutate(
-        angle_diff = angle_diff(bearing_seal, bearing_trace),
-        is_following = angle_diff < 45
-    )
 
 cat("\n\n--- Summary of locw_by_id ---\n")
 locw_by_id %>%
@@ -369,8 +371,17 @@ locw_by_id %>%
     psych::describe() %>%
     print()
 
+locw_by_id %>%
+    st_drop_geometry() %>%
+    Hmisc::describe() %>%
+    print()
+
 by_following <- locw_by_id %>%
     group_by(is_following) %>%
+    summarise(mean_bearing = mean.circular(bearing_seal, na.rm = TRUE), sd_bearing = sd.circular(bearing_seal, na.rm = TRUE), n = n())
+
+by_following_200m <- locw_by_id %>%
+    group_by(is_following_200m) %>%
     summarise(mean_bearing = mean.circular(bearing_seal, na.rm = TRUE), sd_bearing = sd.circular(bearing_seal, na.rm = TRUE), n = n())
 
 
@@ -381,113 +392,137 @@ by_following %>%
     as.data.frame() %>%
     print()
 
-w_pt <- w_pt %>%
-    left_join(locw_by_id %>% st_drop_geometry() %>% select(id, is_following), by = "id")
+cat("\n\n--- Summary of by_following_200m ---\n")
+by_following_200m %>%
+    st_drop_geometry() %>%
+    mutate(across(where(is.numeric), ~ round(., 1))) %>%
+    as.data.frame() %>%
+    print()
+{
+    # 3. Calculate mean angular difference
+    calculate_circular_cummean <- function(bearings) {
+        n <- length(bearings)
 
+        sapply(1:n, function(i) {
+            bearings_subset <- bearings[1:i]
+            mean_bearing <- mean.circular(bearings_subset)
+        })
+    }
 
-w_pt %>%
-    ggplot(aes(x = days_since_start, y = angle_diff, color = is_following)) +
-    geom_line() +
-    facet_wrap(~id, scales = "free_x") +
-    theme_bw() +
-    labs(x = "Days since start", y = "Angle difference (degrees)")
+    # Combine weaner and particle data
+    w_pt <- locw %>%
+        left_join(locps %>% st_drop_geometry() %>% select(id, date, bearing), by = c("id", "date"), suffix = c("_seal", "_pt")) %>%
+        left_join(locp %>% st_drop_geometry() %>% select(id, date, bearing) %>% rename(bearing_pt200m = bearing), by = c("id", "date")) %>%
+        group_by(id) %>%
+        mutate(
+            cummean_bearing_seal = calculate_circular_cummean(bearing_seal),
+            cummean_bearing_pt = calculate_circular_cummean(bearing_pt),
+            cummean_bearing_pt200m = calculate_circular_cummean(bearing_pt200m),
+            days_since_start = as.numeric(date - first(date)),
+            angle_diff_seal_pt = angle_diff(cummean_bearing_seal, cummean_bearing_pt),
+            angle_diff_seal_pt200m = angle_diff(cummean_bearing_seal, cummean_bearing_pt200m),
+        ) %>%
+        left_join(locw_by_id %>% st_drop_geometry() %>% select(id, is_following, is_following_200m), by = "id")
+}
 
-ggsave(paste0(output_folder, "/angle_diff_line_plot.png"), width = 10, height = 8, dpi = 300)
-
-
-w_pt %>%
+p1 <- w_pt %>%
     ggplot(aes(x = days_since_start, y = id)) +
-    geom_tile(aes(fill = angle_diff)) +
+    geom_tile(aes(fill = angle_diff_seal_pt)) +
     scale_fill_viridis_c(option = "B") +
     theme_bw() +
-    facet_wrap(~is_following, scales = "free") +
-    labs(x = "Days since start", y = "Seal ID", fill = "Angle difference")
+    facet_wrap(~is_following, scales = "free", labeller = as_labeller(c(`TRUE` = "following", `FALSE` = "not following"))) +
+    labs(x = "Days since start", y = "Seal ID", fill = "Δ Bearing - 0 m (°)")
 
+p1
 
-ggsave(paste0(output_folder, "/angle_diff_tile_plot.png"), width = 10, height = 8, dpi = 300)
+p2 <- w_pt %>%
+    ggplot(aes(x = days_since_start, y = id)) +
+    geom_tile(aes(fill = angle_diff_seal_pt200m)) +
+    scale_fill_viridis_c(option = "B") +
+    theme_bw() +
+    facet_wrap(~is_following_200m, scales = "free", labeller = as_labeller(c(`TRUE` = "following", `FALSE` = "not following"))) +
+    labs(x = "Days since start", y = "Seal ID", fill = "Δ Bearing - 200 m (°)")
 
-library(patchwork)
+p1 + p2 + plot_layout(ncol = 2) + plot_annotation(tag_levels = "a") &
+    theme(legend.position = "bottom", text = element_text(size = 8))
 
-plot_cummean_bearings <- function(data, ncol = 4) {
-    data %>%
-        ggplot() +
-        geom_point(aes(x = cummean_bearing.x, y = days_since_start, color = "Pups"), size = 0.1, alpha = .5) +
-        geom_point(aes(x = cummean_bearing.y, y = days_since_start, color = "Particle"), size = 0.1, alpha = .5) +
-        facet_wrap(~id, scales = "free", ncol = ncol) +
+ggsave(paste0(output_folder, "/angle_diff_tile_plot.png"), width = 10, height = 5, dpi = 300)
+
+scico::scico_palette_show()
+
+plots1 <- w_pt %>%
+    rename(x1 = cummean_bearing_seal, x2 = cummean_bearing_pt, y = days_since_start) %>%
+    select(id, is_following, x1, x2, y) %>%
+    group_split(id) %>%
+    map(~ ggplot(data = .x) +
+        geom_point(aes(x = x1, y = y, color = "Pups"), size = 0.2, alpha = .5) +
+        geom_point(aes(x = x2, y = y, color = "Particle"), size = 0.2, alpha = .5) +
         coord_polar() +
         scale_x_continuous(limits = c(0, 360)) +
-        scale_color_manual(values = c("Pups" = "#D55E00", "Particle" = "#0072B2")) +
+        scale_color_manual(values = c("Pups" = "#D55E00", "Particle" = "gray20")) +
         theme_bw() +
-        theme(legend.position = "bottom", strip.text = element_text(size = 8)) +
-        labs(x = NULL, y = "Days since start", color = "Group")
-}
+        theme(
+            legend.position = "bottom", text = element_text(size = 8),
+            panel.border = element_rect(color = ifelse(.x$is_following[1], "#0072B2", "grey70"), size = 1)
+        ) +
+        labs(x = NULL, y = "Days since start", color = "Group", subtitle = .x$id[1]))
 
-f <- w_pt %>%
-    filter(is_following) 
+o <- order(w_pt %>% group_by(id, is_following) %>% nest() %>% pull(is_following))
 
-nf <- w_pt %>%
-    filter(!is_following)
+plots1 <- plots1[o]
 
-p1 <- f %>%
-    plot_cummean_bearings(ncol = 6)
+p1 <- wrap_plots(plots1, guides = "collect") +
+    plot_annotation(title = "0 m") &
+    theme(legend.position = "bottom", axis.title = element_blank())
 
-p2 <- nf %>%
-    plot_cummean_bearings(ncol = 3)
+ggsave(file.path(output_folder, "angle_diff_tracks_0m.png"), p1, width = 10, height = 10, dpi = 300, bg = "white")
 
-p1 + p2 + plot_layout(ncol = 2, guides = "collect", widths = c(n_f, n_nf)) + plot_annotation(tag_levels = "a") &
-    theme(legend.position = "bottom")
 
-ggsave(paste0(output_folder, "/cummean_bearings_plot.png"), width = 16, height = 10, dpi = 300)
+plots2 <- w_pt %>%
+    rename(x1 = cummean_bearing_seal, x2 = cummean_bearing_pt200m, y = days_since_start) %>%
+    select(id, is_following_200m, x1, x2, y) %>%
+    group_split(id) %>%
+    map(~ ggplot(data = .x) +
+        geom_point(aes(x = x1, y = y, color = "Pups"), size = 0.2, alpha = .5) +
+        geom_point(aes(x = x2, y = y, color = "Particle"), size = 0.2, alpha = .5) +
+        coord_polar() +
+        scale_x_continuous(limits = c(0, 360)) +
+        scale_color_manual(values = c("Pups" = "#D55E00", "Particle" = "gray20")) +
+        theme_bw() +
+        theme(
+            legend.position = "bottom", text = element_text(size = 8),
+            panel.border = element_rect(color = ifelse(.x$is_following_200m[1], "#0072B2", "grey70"), size = 1)
+        ) +
+        labs(x = NULL, y = "Days since start", color = "Group", subtitle = .x$id[1]))
+
+o <- order(w_pt %>% group_by(id, is_following_200m) %>% nest() %>% pull(is_following_200m))
+
+plots2 <- plots2[o]
+
+p2 <- wrap_plots(plots2, guides = "collect") +
+    plot_annotation(title = "200 m") &
+    theme(legend.position = "bottom", axis.title = element_blank())
+
+ggsave(file.path(output_folder, "angle_diff_tracks_200m.png"), p2, width = 10, height = 10, dpi = 300, bg = "white")
 
 w_pt %>%
+    st_drop_geometry() %>%
+    select(id, contains("angle_diff"), contains("is_following")) %>%
+    rename(is_following_0m = is_following) %>%
+    pivot_longer(contains("is_following"), names_to = "is_following_type", values_to = "is_following") %>%
+    pivot_longer(contains("angle_diff"), names_to = "angle_diff_type", values_to = "angle_diff") %>%
+    mutate(pt_type = if_else(str_detect(is_following_type, "200m"), "pt 200m", "pt 0m")) %>%
+    select(-angle_diff_type, -is_following_type) %>%
     ggplot() +
     geom_histogram(aes(x = angle_diff, fill = is_following), alpha = 0.5, binwidth = 10, position = "identity") +
-    theme_bw()
+    facet_wrap(~pt_type, scales = "free") +
+    theme_bw() +
+    labs(x = "Angle difference (°)", y = "Count", fill = "Following")
 
-ggsave(paste0(output_folder, "/angle_diff_histogram_plot.png"), width = 10, height = 8, dpi = 300)
-
-
-{
-    # Plot sliding mean bearings
-    #     library(slider)
-
-    #     calculate_sliding_mean <- function(bearings, before = 2, after = 2) {
-    #         slide(bearings, ~ mean.circular(., na.rm = TRUE), .before = before, .after = after, .complete = TRUE) %>%
-    #             # convert NULL to NA
-    #             map(~ if (is.null(.)) NA else .) %>%
-    #             unlist()
-    #     }
-
-    #     w_pt$sliding_bearing.x <- calculate_sliding_mean(w_pt$bearing.x, 5, 5)
-    #     w_pt$sliding_bearing.y <- calculate_sliding_mean(w_pt$bearing.y, 5, 5)
-    #     w_pt$angle_diff.sliding <- angle_diff(w_pt$sliding_bearing.x, w_pt$sliding_bearing.y)
-
-    #     w_pt %>%
-    #         ggplot() +
-    #         geom_path(aes(x = sliding_bearing.x, y = days_since_start, color = "Weaner"), size = .5, alpha = 0.5) +
-    #         geom_path(aes(x = sliding_bearing.y, y = days_since_start, color = "Particle 0m"), size = .5, alpha = 0.5) +
-    #         facet_wrap(~id, scales = "free") +
-    #         coord_polar() +
-    #         scale_x_continuous(limits = c(0, 360)) +
-    #         scale_color_manual(values = c("Weaner" = "red", "Particle 0m" = "#6ebeff")) +
-    #         theme_bw()
-
-    #     w_pt %>%
-    #         ggplot(aes(x = days_since_start, y = angle_diff.sliding)) +
-    #         geom_line() +
-    #         facet_wrap(~id, scales = "free_x") +
-    #         theme_bw() +
-    #         labs(x = "Days since start", y = "Angle difference (degrees)")
-}
-
+ggsave(paste0(output_folder, "/angle_diff_histogram_plot.png"), width = 10, height = 6, dpi = 300)
 
 ## Survival model analysis of following vs not following
-library(tidyverse)
-library(lubridate)
-library(sf)
-library(MuMIn)
-library(broom)
-library(DHARMa)
+# Prepare data for survival model
 all_data_weaners <- load_all_data_weaners() # includes environment data
 
 predictor_vars <- c("sst", "ssha", "eke", "tri", "slope", "SSTgrad", "ice", "dist_to_ice_m", "chl", "chlgrad")
@@ -499,96 +534,24 @@ model_data <- all_data_weaners %>%
     left_join(get_survival_data(), by = "id") %>%
     left_join(
         w_pt %>%
-            select(id, is_following) %>%
+            select(id, is_following, is_following_200m) %>%
             st_drop_geometry() %>%
             group_by(id) %>%
-            summarise(is_following = last(is_following)),
+            summarise(is_following = last(is_following), is_following_200m = last(is_following_200m)),
         by = "id"
-    )
+    ) %>%
+    select(-contains("seen"))
 
-cat("\n\nmodel data summary:\n")
+
+
+## Summarise model data
 print(model_data %>% summary())
 
 print(model_data %>% Hmisc::describe())
 print(model_data %>% psych::describe())
 
-# Create contingency tables for is_following vs first trip survival and first year survival
-
-# First trip survival contingency table
-trip_contingency <- model_data %>%
-    group_by(is_following, survive_trip_1) %>%
-    summarise(count = n(), .groups = "drop") %>%
-    pivot_wider(names_from = survive_trip_1, values_from = count, values_fill = 0) %>%
-    mutate(
-        total = `FALSE` + `TRUE`,
-        prop_not_survived = `FALSE` / total,
-        prop_survived = `TRUE` / total
-    )
-
-colnames(trip_contingency)[2:3] <- c("died first trip", "survived first trip")
-
-cat("\n\n--- Contingency table: Is following vs First trip survival ---\n")
-print(trip_contingency)
-
-# First year survival contingency table
-year_contingency <- model_data %>%
-    group_by(is_following, survive_year_1) %>%
-    summarise(count = n(), .groups = "drop") %>%
-    pivot_wider(names_from = survive_year_1, values_from = count, values_fill = 0) %>%
-    mutate(
-        total = `FALSE` + `TRUE`,
-        prop_not_survived = `FALSE` / total,
-        prop_survived = `TRUE` / total
-    )
-
-colnames(year_contingency)[2:3] <- c("died first year", "survived first year")
-
-cat("\n\n--- Contingency table: Is following vs First year survival ---\n")
-print(year_contingency)
-
-# Calculate odds ratios for survival based on following behavior
-
-# Function to calculate odds ratio and confidence interval
-calculate_odds_ratio <- function(contingency_table) {
-    odds_ratio <- (contingency_table[2, 2] * contingency_table[1, 1]) /
-        (contingency_table[1, 2] * contingency_table[2, 1])
-
-    log_odds_ratio <- log(odds_ratio)
-    se_log_odds_ratio <- sqrt(sum(1 / contingency_table))
-    ci_lower <- exp(log_odds_ratio - 1.96 * se_log_odds_ratio)
-    ci_upper <- exp(log_odds_ratio + 1.96 * se_log_odds_ratio)
-
-    return(list(odds_ratio = odds_ratio, ci_lower = ci_lower, ci_upper = ci_upper))
-}
-
-# For first trip survival
-trip_cont_matrix <- as.matrix(trip_contingency[, c("died first trip", "survived first trip")])
-trip_odds <- calculate_odds_ratio(trip_cont_matrix)
-
-cat("\nOdds of surviving first trip if following vs not following:\n")
-cat(sprintf(
-    "Odds ratio: %.2f (95%% CI: %.2f - %.2f)\n",
-    trip_odds$odds_ratio, trip_odds$ci_lower, trip_odds$ci_upper
-))
-cat(sprintf(
-    "Seals following the current have %.1f times higher odds of surviving their first trip.\n\n",
-    trip_odds$odds_ratio
-))
-
-# For first year survival
-year_cont_matrix <- as.matrix(year_contingency[, c("died first year", "survived first year")])
-year_odds <- calculate_odds_ratio(year_cont_matrix)
-
-cat("Odds of surviving first year if following vs not following:\n")
-cat(sprintf(
-    "Odds ratio: %.2f (95%% CI: %.2f - %.2f)\n",
-    year_odds$odds_ratio, year_odds$ci_lower, year_odds$ci_upper
-))
-cat(sprintf(
-    "Seals following the current have %.1f times higher odds of surviving their first year.\n",
-    year_odds$odds_ratio
-))
-
+## Explore explanatory variables and their relationships with survival
+ggpairs(model_data %>% select(-id), aes(color = factor(survive_trip_1)))
 
 
 # source("code/11b_3.1_get_high_cor_vars.R")
@@ -600,86 +563,83 @@ model_trip <- glm(survive_trip_1 ~ is_following * weanmass + birthyear + sst + s
     data = model_data, family = binomial(link = "logit"), na.action = "na.fail"
 )
 
-cat("\n\n--- Summary of model_trip (global model) ---\n")
-print(summary(model_trip))
+evaluate_model <- function(model) {
+    cat("\n\n--- Summary of model_trip (global model) ---\n")
+    print(summary(model))
 
-# Add DHARMa model checking for trip survival model
-cat("\n\n--- DHARMa model checking for trip survival model ---\n")
-dharma_trip <- simulateResiduals(fittedModel = model_trip, n = 1000)
-plot(dharma_trip)
-testDispersion(dharma_trip)
-testZeroInflation(dharma_trip)
-testOutliers(dharma_trip)
+    # Add DHARMa model checking for trip survival model
+    cat("\n\n--- DHARMa model checking for trip survival model ---\n")
+    dharma <- simulateResiduals(fittedModel = model, n = 1000)
+    plot(dharma)
+    testDispersion(dharma) %>% print()
+    testZeroInflation(dharma) %>% print()
+    testOutliers(dharma) %>% print()
 
-dredge_trip <- dredge(model_trip)
+    # model selection
+    dredge <- dredge(model)
 
-best_models <- get.models(dredge_trip, subset = delta <= 2)
+    best_models <- get.models(dredge, subset = delta <= 2)
 
-# Create a function to extract important metrics
-extract_model_info <- function(model, model_name) {
-    glance_info <- glance(model)
-    tibble(
-        model_name = model_name,
-        formula = paste(format(formula(model)), collapse = " "),
-        AICc = AICc(model), # Use AICc instead of AIC
-        BIC = glance_info$BIC,
-        deviance = glance_info$deviance,
-        df.residual = glance_info$df.residual,
-        null.deviance = glance_info$null.deviance,
-        df.null = glance_info$df.null
-    )
+    # summarise model selection
+    .extract_model_info <- function(model, model_name) {
+        glance_info <- glance(model)
+        tibble(
+            model_name = model_name,
+            formula = paste(format(formula(model)), collapse = " "),
+            AICc = AICc(model), # Use AICc instead of AIC
+            BIC = glance_info$BIC,
+            deviance = glance_info$deviance,
+            df.residual = glance_info$df.residual,
+            null.deviance = glance_info$null.deviance,
+            df.null = glance_info$df.null
+        )
+    }
+
+    model_summary <- map2_dfr(best_models, names(best_models), .extract_model_info) %>%
+        mutate(delta_AICc = AICc - min(AICc)) %>% # Use AICc instead of AIC
+        arrange(delta_AICc)
+
+    cat("\n\n--- Model selection summary for trip survival ---\n")
+    print(model_summary %>% as.data.frame())
+
+    # model averaging
+    avg_model <- model.avg(best_models)
+    cat("\n\n--- Model averaging summary for trip survival ---\n")
+    print(summary(avg_model))
+
+    # variable importance
+    importance <- sw(dredge)
+    cat("\n\n--- Variable importance for trip survival ---\n")
+    print(importance)
 }
 
-# Apply the function to each model
-model_summary <- map2_dfr(best_models, names(best_models), extract_model_info) %>%
-    mutate(delta_AICc = AICc - min(AICc)) %>% # Use AICc instead of AIC
-    arrange(delta_AICc)
-
-cat("\n\n--- Model selection summary for trip survival ---\n")
-print(model_summary %>% as.data.frame())
-
-avg_model <- model.avg(best_models)
-cat("\n\n--- Model averaging summary for trip survival ---\n")
-print(summary(avg_model))
-
-importance <- sw(dredge_trip)
-cat("\n\n--- Variable importance for trip survival ---\n")
-print(importance)
+evaluate_model(model_trip)
 
 ## Year survival
 model_year <- glm(survive_year_1 ~ is_following * weanmass + birthyear + sst + ssha + eke + slope + SSTgrad + ice + chlgrad,
     data = model_data, family = binomial(link = "logit"), na.action = "na.fail"
 )
 
-cat("\n\n--- Summary of model_year (global model) ---\n")
-print(summary(model_year))
+evaluate_model(model_year)
 
-# Add DHARMa model checking for year survival model
-cat("\n\n--- DHARMa model checking for year survival model ---\n")
-dharma_year <- simulateResiduals(fittedModel = model_year, n = 1000)
-plot(dharma_year)
-testDispersion(dharma_year)
-testZeroInflation(dharma_year)
-testOutliers(dharma_year)
+## Trip survival with particle 200m
+# scale model data
+model_data_scaled <- model_data %>%
+    mutate(across(where(is.numeric), ~ scale(.)))
 
-dredge_year <- dredge(model_year)
+model_trip_200m <- glm(survive_trip_1 ~ is_following_200m + weanmass + birthyear + sst + ssha + eke + slope + SSTgrad + ice + chlgrad,
+    data = model_data_scaled, family = binomial(link = "logit"), na.action = "na.fail"
+)
 
-best_models_year <- get.models(dredge_year, subset = delta <= 2)
+evaluate_model(model_trip_200m)
+car::vif(model_trip_200m, type = "predictor")
 
-model_summary_year <- map2_dfr(best_models_year, names(best_models_year), extract_model_info) %>%
-    mutate(delta_AICc = AICc - min(AICc)) %>%
-    arrange(delta_AICc)
+model_year_200m <- glm(survive_year_1 ~ is_following_200m + weanmass + birthyear + sst + ssha + eke + slope + SSTgrad + ice + chlgrad,
+    data = model_data_scaled, family = binomial(link = "logit"), na.action = "na.fail"
+)
 
-cat("\n\n--- Model selection summary for year survival ---\n")
-print(model_summary_year %>% as.data.frame())
+evaluate_model(model_year_200m)
 
-avg_model_year <- model.avg(best_models_year)
-cat("\n\n--- Model averaging summary for year survival ---\n")
-print(summary(avg_model_year))
-
-importance_year <- sw(dredge_year)
-cat("\n\n--- Variable importance for year survival ---\n")
-print(importance_year)
 
 # Generate general summary table
 cat("\n\n--- Summary table for all weaners ---\n")
@@ -821,4 +781,3 @@ sink()
 cat("\n\nModel analysis results have been saved to 'model_outputs.md'\n")
 
 cat("Analysis complete. Output saved to:", output_folder, "\n")
-
