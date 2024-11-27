@@ -18,6 +18,15 @@ files <- list(
 ```
 
 
+```{r}
+
+load(here("output", "seal_id.rdata"))
+ls()
+sealID_all %>% print(n = 100)
+
+```
+
+
 ```{r metadata_function}
 get_dataset_info <- function(file_path, dataset_name) {
     data <- read_rds(file_path) %>%
@@ -121,7 +130,7 @@ all_metadata <- list(
 )
 
 # Save metadata as RDS for potential future use
-save_rds(all_metadata, here("output", "dataset_metadata.rds"))
+write_rds(all_metadata, here("output", "dataset_metadata.rds"))
 
 # Create a simplified metadata summary as CSV
 metadata_summary <- bind_rows(
@@ -135,3 +144,5 @@ metadata_summary <- bind_rows(
 write_csv(metadata_summary, here("output", "dataset_metadata_summary.csv"))
 #
 ```
+
+
