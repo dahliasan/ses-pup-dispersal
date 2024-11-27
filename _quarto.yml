@@ -2,17 +2,17 @@ project:
   type: website
   output-dir: docs
   render:
+    - index.qmd
     - code/dispersal-analysis.qmd
     - code/export-data.qmd
     - code/functions.qmd
-    - data.qmd
     - "!manuscript/"
 
 website:
   title: "Southern Elephant Seal Pup Dispersal Analysis"
   navbar:
     left:
-      - href: data.qmd
+      - href: index.qmd
         text: Home
       - text: "Code"
         menu:
