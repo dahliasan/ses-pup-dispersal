@@ -1,6 +1,7 @@
 ---
 title: Data Export
 layout: default
+nav_order: 2
 ---
 
 ---
@@ -31,7 +32,7 @@ ls()
 ```
 
 ```
-##  [1] "add_frontmatter"               "all_bearings_plot"             "all_data_weaners"              "all_tracks_plot"               "angle_diff"                    "bb"                            "calcMeanDepartureDate"         "calculate_bearings"            "calculate_circular_cummean"    "calculate_days_since_start"    "calculate_distance_from_start" "colony"                        "compare_bearings"              "convert2polarsf"               "crs"                           "eastOrWest"                    "evaluate_model"                "female_data_path"              "files"                         "get_survival_data"             "id_keep"                       "identify_outbound_trip"        "interpolate_track"             "load_all_data_weaners"         "locf"                          "locf_by_id"                    "locp"                          "locp_by_id"                    "locps"                         "locps_by_id"                   "locw"                          "locw_by_id"                    "make_circular"                 "mean_bearings_plot"            "model"                         "model_data"                    "model_data_all"                "model_trip"                    "model_year"                    "mq"                            "mq_sf"                         "normalize_longitude"           "o"                             "orsi_sf"                       "output_folder"                 "p_list"                        "p_names"                       "p1"                            "p2"                            "p3"                            "palette1"                      "palette2"                      "palette3"                      "particle_data_path"            "plot_bearing_histogram"        "plots1"                        "plots2"                        "predictor_vars"                "preprocess_seal_particle_data" "preprocess_track"              "print_and_save_results"        "process_by_id"                 "proj"                          "saveDepartureDateResult"       "seal_data_path"                "sealID_all"                    "surface_particle_data_path"    "unwrapLon"                     "w_pt"                          "whichZone"                     "world_sf"                      "wrapLon"
+##  [1] "add_frontmatter"               "all_bearings_plot"             "all_data_weaners"              "all_metadata"                  "all_tracks_plot"               "angle_diff"                    "bb"                            "calcMeanDepartureDate"         "calculate_bearings"            "calculate_circular_cummean"    "calculate_days_since_start"    "calculate_distance_from_start" "colony"                        "compare_bearings"              "convert2polarsf"               "crs"                           "dispersal_content"             "eastOrWest"                    "evaluate_model"                "export_content"                "female_data_path"              "female_info"                   "files"                         "functions_content"             "functions_md"                  "get_dataset_info"              "get_survival_data"             "id_keep"                       "identify_outbound_trip"        "interpolate_track"             "load_all_data_weaners"         "locf"                          "locf_by_id"                    "locp"                          "locp_by_id"                    "locps"                         "locps_by_id"                   "locw"                          "locw_by_id"                    "make_circular"                 "mean_bearings_plot"            "metadata_summary"              "model"                         "model_data"                    "model_data_all"                "model_trip"                    "model_year"                    "mq"                            "mq_sf"                         "normalize_longitude"           "o"                             "orsi_sf"                       "output_folder"                 "p_list"                        "p_names"                       "p1"                            "p2"                            "p3"                            "palette1"                      "palette2"                      "palette3"                      "particle_data_path"            "particle_info"                 "plot_bearing_histogram"        "plots1"                        "plots2"                        "predictor_vars"                "preprocess_seal_particle_data" "preprocess_track"              "print_and_save_results"        "process_by_id"                 "process_qmd"                   "proj"                          "saveDepartureDateResult"       "seal_data_path"                "seal_info"                     "sealID_all"                    "surface_particle_data_path"    "surface_particle_info"         "temp_file"                     "unwrapLon"                     "w_pt"                          "whichZone"                     "world_sf"                      "wrapLon"
 ```
 
 ``` r
@@ -140,6 +141,10 @@ sealID_all %>% print(n = 100)
 ## 96 mq4-20918-00    20918 <NA>  W4191 W4231   28783
 ## 97 mq4-Ella-00     22489 <NA>  W3325 W3326   28345
 ## 98 mq4-Flora-00    26624 <NA>  W3843 W3844   28603
+```
+
+``` r
+write_csv(sealID_all, here("output", "seal_id.csv"))
 ```
 
 
@@ -409,5 +414,3 @@ metadata_summary <- bind_rows(
 write_csv(metadata_summary, here("output", "dataset_metadata_summary.csv"))
 #
 ```
-
-

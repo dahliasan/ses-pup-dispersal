@@ -1,6 +1,7 @@
 ---
 title: Dispersal Analysis
 layout: default
+nav_order: 2
 ---
 
 ---
@@ -20,100 +21,18 @@ format:
 ``` r
 library(tidyverse)
 library(circular)
-```
-
-```
-## 
-## Attaching package: 'circular'
-```
-
-```
-## The following objects are masked from 'package:stats':
-## 
-##     sd, var
-```
-
-``` r
 library(sf)
 library(move)
-```
-
-```
-## Warning: package 'move' was built under R version 4.4.1
-```
-
-```
-## Loading required package: geosphere
-```
-
-```
-## Warning: package 'geosphere' was built under R version 4.4.1
-```
-
-```
-## Loading required package: sp
-```
-
-```
-## Loading required package: raster
-```
-
-```
-## 
-## Attaching package: 'raster'
-```
-
-```
-## The following object is masked from 'package:dplyr':
-## 
-##     select
-```
-
-```
-## A successor to `move` has been developed and is available on cran (`move2`, https://bartk.gitlab.io/move2/). This brings speed improvements and is based on `sf`. Feedback (including missing functionality) on this new package is welcome, for new projects it might be worth considering starting directly with `move2`.
-```
-
-``` r
 library(conflicted)
 library(patchwork)
 library(skimr)
 library(gtsummary)
-```
-
-```
-## Warning: package 'gtsummary' was built under R version 4.4.1
-```
-
-``` r
 library(gt)
-```
-
-```
-## Warning: package 'gt' was built under R version 4.4.1
-```
-
-``` r
 library(gtExtras)
 library(summarytools)
 library(GGally)
-```
-
-```
-## Registered S3 method overwritten by 'GGally':
-##   method from   
-##   +.gg   ggplot2
-```
-
-``` r
 library(broom)
 library(DHARMa)
-```
-
-```
-## This is DHARMa 0.4.6. For overview type '?DHARMa'. For recent changes, type news(package = 'DHARMa')
-```
-
-``` r
 library(MuMIn)
 library(here)
 
@@ -121,12 +40,13 @@ conflicts_prefer(dplyr::filter, dplyr::select, dplyr::mutate, dplyr::group_by)
 ```
 
 ```
+## [conflicted] Removing existing preference.
 ## [conflicted] Will prefer dplyr::filter over any other package.
-```
-
-```
+## [conflicted] Removing existing preference.
 ## [conflicted] Will prefer dplyr::select over any other package.
+## [conflicted] Removing existing preference.
 ## [conflicted] Will prefer dplyr::mutate over any other package.
+## [conflicted] Removing existing preference.
 ## [conflicted] Will prefer dplyr::group_by over any other package.
 ```
 
@@ -3982,5 +3902,6 @@ evaluate_model(model_year)
 
 ```
 ## Joining with `by = join_by(id, is_trip_complete, seen_6m, seen_1y, weanmass, birthyear)`
-## `summarise()` has grouped output by 'id', 'tripdur', 'birthdate', 'weanmass', 'survive_trip_1'. You can override using the `.groups` argument.
+## `summarise()` has grouped output by 'id', 'tripdur', 'birthdate', 'weanmass', 'survive_trip_1'. You can override using the
+## `.groups` argument.
 ```

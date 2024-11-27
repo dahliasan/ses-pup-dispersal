@@ -1,6 +1,7 @@
 ---
 title: Utility Functions
 layout: default
+nav_order: 2
 ---
 
 # Utility Functions
