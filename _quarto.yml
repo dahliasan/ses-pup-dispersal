@@ -1,0 +1,24 @@
+project:
+  type: website
+  output-dir: docs      # Output to docs folder for GitHub Pages
+
+website:
+  title: "Southern Elephant Seal Pup Dispersal Analysis"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - text: "Code"
+        menu:
+          - code/dispersal-analysis.qmd
+          - code/export-data.qmd
+          - code/functions.qmd
+      - data.qmd
+
+format:
+  html:
+    theme: cosmo
+    code-fold: true
+    code-tools: true
+    toc: true
+    embed-resources: false
