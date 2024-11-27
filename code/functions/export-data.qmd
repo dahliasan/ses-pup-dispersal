@@ -1,0 +1,137 @@
+---
+title: "Export data for publication"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(sf)
+
+# Load data
+files <- list(
+    seal_data_path = here("output", "tracks_processed_12h.rds"),
+    female_data_path = here("data", "adult_female_locs.rds"),
+    particle_data_path = here("output", "particle-trace-186.13m.rds"),
+    surface_particle_data_path = here("output", "currently_particleTrace.rds")
+)
+```
+
+
+```{r metadata_function}
+get_dataset_info <- function(file_path, dataset_name) {
+    data <- read_rds(file_path) %>%
+        ungroup() %>%
+        st_drop_geometry()
+
+    # Time coverage using reframe instead of summarise
+    time_range <- data %>%
+        reframe(
+            start_date = min(date, na.rm = TRUE),
+            end_date = max(date, na.rm = TRUE),
+            n_records = n()
+        )
+
+    # Spatial coverage using reframe
+    spatial_range <- data %>%
+        reframe(
+            lon_min = min(lon, na.rm = TRUE),
+            lon_max = max(lon, na.rm = TRUE),
+            lat_min = min(lat, na.rm = TRUE),
+            lat_max = max(lat, na.rm = TRUE)
+        )
+
+    # Variable names and classes (removing duplicates)
+    var_info <- data %>%
+        summarise(across(everything(), ~ class(.x)[1])) %>% # Take only first class
+        pivot_longer(everything(),
+            names_to = "variable",
+            values_to = "class"
+        ) %>%
+        distinct() # Remove any remaining duplicates
+
+    # Number of unique IDs
+    n_ids <- data %>%
+        pull(id) %>%
+        n_distinct()
+
+    # Print summary
+    cat("\n=== Dataset:", dataset_name, "===\n")
+    cat("\nTime Coverage:\n")
+    print(time_range)
+
+    cat("\nSpatial Coverage:\n")
+    print(spatial_range)
+
+    cat("\nNumber of unique IDs:", n_ids, "\n")
+
+    cat("\nVariables and their classes:\n")
+    print(var_info)
+
+    cat("\nSample size:", nrow(data), "records\n")
+
+    # Return invisibly for potential further use
+    invisible(list(
+        time_range = time_range,
+        spatial_range = spatial_range,
+        var_info = var_info,
+        n_ids = n_ids,
+        data = data # Include the data for CSV export
+    ))
+}
+```
+
+```{r extract_metadata}
+# Get metadata for each dataset
+seal_info <- get_dataset_info(files$seal_data_path, "seal_data")
+female_info <- get_dataset_info(files$female_data_path, "female_data")
+particle_info <- get_dataset_info(files$particle_data_path, "particle_data")
+surface_particle_info <- get_dataset_info(files$surface_particle_data_path, "surface_particle_data")
+```
+
+```{r export_csv}
+# Export CSVs
+seal_info$data %>%
+    ungroup() %>%
+    st_drop_geometry() %>%
+    rename(flag = SUS) %>%
+    select(id, date, lon, lat, flag) %>%
+    write_csv(paste0(tools::file_path_sans_ext(files$seal_data_path), ".csv"))
+
+female_info$data %>%
+    select(id, date, lon, lat, type, month, season) %>%
+    write_csv(paste0(tools::file_path_sans_ext(files$female_data_path), ".csv"))
+
+particle_info$data %>%
+    select(id, date, lon, lat) %>%
+    write_csv(paste0(tools::file_path_sans_ext(files$particle_data_path), ".csv"))
+
+surface_particle_info$data %>%
+    select(id, date, lon, lat) %>%
+    write_csv(paste0(tools::file_path_sans_ext(files$surface_particle_data_path), ".csv"))
+```
+
+```{r save_metadata}
+# Combine all metadata into a list
+all_metadata <- list(
+    seal_data = seal_info,
+    female_data = female_info,
+    particle_data = particle_info,
+    surface_particle_data = surface_particle_info
+)
+
+# Save metadata as RDS for potential future use
+save_rds(all_metadata, here("output", "dataset_metadata.rds"))
+
+# Create a simplified metadata summary as CSV
+metadata_summary <- bind_rows(
+    seal_info$time_range %>% mutate(dataset = "seal_data"),
+    female_info$time_range %>% mutate(dataset = "female_data"),
+    particle_info$time_range %>% mutate(dataset = "particle_data"),
+    surface_particle_info$time_range %>% mutate(dataset = "surface_particle_data")
+) %>%
+    select(dataset, everything())
+
+write_csv(metadata_summary, here("output", "dataset_metadata_summary.csv"))
+#
+```
